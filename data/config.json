@@ -1,0 +1,182 @@
+{
+    "admin_password": "ultraexodus1999!",
+    "seo": {
+        "titulo": "TheJazZDM | Perfil y Portfolio",
+        "favicon": "15315_1.jpg"
+    },
+    "perfil": {
+        "nombre": "TheJazZDM",
+        "titulo": "Especialista en Infraestructura | Support & Dev",
+        "bio": "Apasionado por la tecnología y la creación de contenido. Construyendo ecosistemas, servidores de alto rendimiento y herramientas para potenciar comunidades en vivo.",
+        "imagen": "Sin_tÃ­tulo_(1)_(2).gif"
+    },
+    "musica": {
+        "titulo": "TheJazZDM",
+        "artista": "Inspiration",
+        "archivo": "D_MAP169.mp3",
+        "volumen": 0.82
+    },
+    "redes": [
+        {
+            "id": "twitch",
+            "nombre": "Twitch",
+            "usuario": "@thejazzdm",
+            "url": "https://twitch.tv/thejazzdm",
+            "icono": "fa-twitch",
+            "color": "#9146FF"
+        },
+        {
+            "id": "discord",
+            "nombre": "Discord",
+            "usuario": "jassyel",
+            "url": "#",
+            "icono": "fa-discord",
+            "color": "#5865F2"
+        },
+        {
+            "id": "instagram",
+            "nombre": "Instagram",
+            "usuario": "@thejazzdm",
+            "url": "https://instagram.com/thejazzdm",
+            "icono": "fa-instagram",
+            "color": "#E1306C"
+        },
+        {
+            "id": "github",
+            "nombre": "GitHub",
+            "usuario": "@jassyel",
+            "url": "https://github.com/jassyel",
+            "icono": "fa-github",
+            "color": "#ffffff"
+        }
+    ],
+    "proyectos": [
+        {
+            "nombre": "ExoLive",
+            "desc": "El panel definitivo para streamers y moderadores. Controla contenido en vivo dentro de OBS.",
+            "url": "https://exolive.gamesrv.net",
+            "icono": "fa-gamepad",
+            "estilo": "pink"
+        },
+        {
+            "nombre": "Inicio | EclipseMC",
+            "desc": "Servidor de Minecraft optimizado. Experiencia fluida sobre infraestructura de alto rendimiento.",
+            "url": "https://clubexo.gamesrv.net/",
+            "icono": "fa-moon",
+            "estilo": "cyan"
+        },
+        {
+            "nombre": "IDDQD Money | Stats & Ranking",
+            "desc": "Telemetría y leaderboard en tiempo real con estadísticas de economía, récords y rankings de jugadores de IDDQD Money.",
+            "url": "/stats",
+            "icono": "fa-chart-line",
+            "estilo": "pink"
+        },
+        {
+            "nombre": "LA Adventure | Hall of Fame",
+            "desc": "Telemetría en tiempo real de los 649 mapas de Hardcore Adventure con cámara interactiva, podio de ganadores y ranking de países.",
+            "url": "/adventure",
+            "icono": "fa-trophy",
+            "estilo": "cyan"
+        }
+    ],
+    "infraestructura": {
+        "titulo": "Infraestructura",
+        "desc": "Administración de redes. Scripts en Bash, gestión dinámica y orquestación de proxies."
+    },
+    "visitas": 69,
+    "comunidad": {
+        "url": "https://discord.gg/E9HaPdJ843"
+    },
+    "modpacks": [
+        {
+            "nombre": "EclipseMC - Official",
+            "desc": "An epic Minecraft server inspired by adventure, exploration, and mythology...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/diosesmc-server",
+            "imagen": "639054772173648341.png"
+        },
+        {
+            "nombre": "DiosesMC - Enhanced (Unofficial)",
+            "desc": "An epic Minecraft modpack inspired by Vegetta777's server...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/diosesmc-server",
+            "imagen": "638942045859628648.png"
+        },
+        {
+            "nombre": "Regorland - Official",
+            "desc": "Official client-side modpack for the Regoland Minecraft server...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/terra-horizons-an-epic-server-exoteam",
+            "imagen": "639004344880056334.png"
+        },
+        {
+            "nombre": "Terra Horizons: EPIC CROSSPLAY",
+            "desc": "A realistic and immersive Minecraft server with extended view distance...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/terra-horizons-an-epic-server-exoteam",
+            "imagen": "638801773555340408.png"
+        },
+        {
+            "nombre": "Terra Horizons LITE",
+            "desc": "A lightweight Minecraft modpack for crossplay servers focused on exploration...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/omegamc-forge-ao",
+            "imagen": "638813256649597340.png"
+        },
+        {
+            "nombre": "ExoTeam - ExodusMC",
+            "desc": "Are you looking for a Minecraft Java and Bedrock compatible server...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/omegamc-forge-ao",
+            "imagen": "638741129595150709.jpeg"
+        },
+        {
+            "nombre": "Distant Horizons - Enhanced Edition",
+            "desc": "Modpack for join to the official Distant Horizon server...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/omegamc-forge-ao",
+            "imagen": "638777645683925447.png"
+        },
+        {
+            "nombre": "Pixel Paradise - ExoTeam",
+            "desc": "+300 MODS. A Adventure Challenges Many dimension, dungeons, monsters...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/omegamc-forge-ao",
+            "imagen": "638359511267568330.jpeg"
+        },
+        {
+            "nombre": "Alpha-&-Omega: ExoTeam Omega MC",
+            "desc": "A hardcore Adventure Challanges! Many dimensions, dungeons, monsters and more...",
+            "url": "https://www.curseforge.com/minecraft/modpacks/omegamc-forge-ao",
+            "imagen": "638209368942451388.png"
+        }
+    ],
+    "schedules": {
+        "minecraft": {
+            "enabled": true,
+            "time": "02:00",
+            "countdown": 180
+        },
+        "velocity": {
+            "enabled": true,
+            "time": "02:00"
+        },
+        "exolive": {
+            "enabled": true,
+            "time": "02:00"
+        },
+        "portfolio": {
+            "enabled": false,
+            "time": "07:00"
+        }
+    },
+    "split_server": {
+        "enabled": true,
+        "name": "Split Server (ZDaemon / Doom)",
+        "ip": "185.73.243.42",
+        "port": 25765,
+        "token": "ultraexodus1999!"
+    },
+    "autoRestartMinecraft": {
+        "enabled": true,
+        "time": "02:00"
+    },
+    "_lastRestartDates": {
+        "minecraft": "Sat Oct 24 2026",
+        "velocity": "Sat Oct 24 2026",
+        "exolive": "Sat Oct 24 2026"
+    }
+}

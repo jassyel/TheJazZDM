@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="head-title">TheJazZDM | Portfolio & Infrastructure</title>
+    <link id="head-favicon" rel="icon" href="/favicon.ico" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="antialiased selection:bg-neon-pink selection:text-white hidden relative" id="main-body">
+    
+    <div id="bubbles-container" class="fixed inset-0 pointer-events-none z-50 overflow-hidden hidden md:block"></div>
+    <div class="bg-grid"></div>
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-neon-pink/10 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-blob"></div>
+        <div class="absolute top-[20%] right-[-10%] w-96 h-96 bg-neon-cyan/10 rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-blob animation-delay-2000"></div>
+    </div>
+    
+    <!-- BARRA DE NAVEGACIÓN FLOTANTE ULTRA-MODERNA (PILL) -->
+    <nav class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] bg-[rgba(12,12,22,0.85)] backdrop-blur-xl border border-white/10 px-4 md:px-6 py-2.5 rounded-full flex items-center gap-3 md:gap-6 shadow-[0_10px_35px_rgba(0,0,0,0.8)] max-w-[95vw] w-max">
+        <a href="#inicio" class="text-[11px] md:text-sm font-bold text-gray-300 hover:text-neon-cyan transition-colors uppercase tracking-widest" data-i18n="nav_home">Inicio</a>
+        <a href="#proyectos" class="text-[11px] md:text-sm font-bold text-gray-300 hover:text-neon-pink transition-colors uppercase tracking-widest" data-i18n="nav_projects">Proyectos</a>
+        <a href="#modpacks" class="text-[11px] md:text-sm font-bold text-gray-300 hover:text-neon-cyan transition-colors uppercase tracking-widest" data-i18n="nav_modpacks">Modpacks</a>
+        <a href="#sistemas" class="text-[11px] md:text-sm font-bold text-gray-300 hover:text-neon-cyan transition-colors uppercase tracking-widest flex items-center gap-1.5">
+            <span data-i18n="nav_systems">Infraestructura</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        </a>
+        <a href="#contacto" class="text-[11px] md:text-sm font-bold text-gray-300 hover:text-[#9d4edd] transition-colors uppercase tracking-widest" data-i18n="nav_socials">Redes</a>
+
+        <div class="h-4 w-px bg-white/15"></div>
+
+        <!-- SELECTOR DE IDIOMA EN PÍLDORA -->
+        <div class="flex items-center bg-[#070710] border border-white/10 rounded-full p-0.5 text-[10px] md:text-xs font-bold font-mono">
+            <button onclick="setLanguage('es')" id="nav-lang-es" class="lang-btn-es px-2.5 py-1 rounded-full transition-all cursor-pointer">ES</button>
+            <button onclick="setLanguage('en')" id="nav-lang-en" class="lang-btn-en px-2.5 py-1 rounded-full transition-all cursor-pointer">EN</button>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 pt-32 pb-20 relative z-10">
+        
+        <!-- SECCIÓN 1: INICIO & PERFIL -->
+        <section id="inicio" class="mb-14 scroll-mt-32">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="glass-card lg:col-span-2 p-8 flex flex-col justify-center relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity duration-500"><i class="fa-solid fa-microchip text-8xl"></i></div>
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10">
+                        <div id="avatar-container" class="relative shrink-0 w-32 h-32 md:w-36 md:h-36 flex items-center justify-center group cursor-pointer shadow-[0_0_25px_rgba(0,255,255,0.3)] rounded-full overflow-hidden">
+                            <div id="avatar-border" class="absolute inset-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_0%,transparent_70%,#FF007F_80%,#00FFFF_100%)]"></div>
+                            <div class="absolute inset-[3px] bg-[#0B0B13] rounded-full z-0"></div>
+                            <div class="absolute inset-[4px] rounded-full overflow-hidden z-10">
+                                <img id="ui-avatar" src="" onerror="this.src='https://ui-avatars.com/api/?name=JazZ&background=1e1e2f&color=00ffff&size=400'" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            </div>
+                        </div>
+
+                        <div class="text-center sm:text-left flex-1 w-full mt-2">
+                            <h1 class="text-4xl md:text-5xl font-extrabold mb-2 tracking-tight">
+                                <span data-i18n="hero_greeting_prefix">Hola, soy</span> <span class="text-gradient" id="ui-nombre"></span>
+                            </h1>
+                            <h2 class="text-lg md:text-xl text-gray-300 font-medium mb-4" id="ui-titulo"></h2>
+                            <p class="text-gray-400 text-sm md:text-base leading-relaxed max-w-lg mb-6" id="ui-bio"></p>
+                            
+                            <div class="flex items-center justify-between bg-[#0B0B13] border border-white/5 rounded-xl p-3 max-w-sm transition-all duration-500 shadow-[0_0_15px_rgba(255,0,127,0.05)] hover:shadow-[0_0_25px_rgba(255,0,127,0.2)] hover:border-neon-pink/30 relative overflow-hidden group/music cursor-pointer" onclick="toggleMusic()">
+                                <div class="absolute inset-0 bg-gradient-to-r from-neon-pink/10 to-neon-cyan/10 opacity-0 group-hover/music:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                                <div class="flex items-center gap-3 relative z-10 min-w-0 pr-2">
+                                    <div class="w-10 h-10 rounded-lg bg-neon-pink/20 flex items-center justify-center text-neon-pink shadow-[0_0_10px_rgba(255,0,127,0.2)] flex-shrink-0 transition-transform">
+                                        <i id="music-disc-icon" class="fa-solid fa-compact-disc text-lg transition-transform duration-700"></i>
+                                    </div>
+                                    <div class="flex flex-col text-left truncate">
+                                        <span class="text-sm font-bold text-white group-hover/music:text-neon-pink transition-colors truncate" id="ui-musica-titulo"></span>
+                                        <span class="text-xs text-gray-400 truncate" id="ui-musica-artista"></span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 relative z-10 flex-shrink-0">
+                                    <!-- Ondas Musicales Minimalistas -->
+                                    <div id="audio-visualizer" class="flex items-end gap-[3px] h-6 px-1">
+                                        <span class="wave-bar w-[3px] bg-gradient-to-t from-neon-pink to-neon-cyan rounded-full transition-[height] duration-75 ease-out" style="height: 4px; opacity: 0.35;"></span>
+                                        <span class="wave-bar w-[3px] bg-gradient-to-t from-neon-pink to-neon-cyan rounded-full transition-[height] duration-75 ease-out" style="height: 4px; opacity: 0.35;"></span>
+                                        <span class="wave-bar w-[3px] bg-gradient-to-t from-neon-pink to-neon-cyan rounded-full transition-[height] duration-75 ease-out" style="height: 4px; opacity: 0.35;"></span>
+                                        <span class="wave-bar w-[3px] bg-gradient-to-t from-neon-pink to-neon-cyan rounded-full transition-[height] duration-75 ease-out" style="height: 4px; opacity: 0.35;"></span>
+                                        <span class="wave-bar w-[3px] bg-gradient-to-t from-neon-pink to-neon-cyan rounded-full transition-[height] duration-75 ease-out" style="height: 4px; opacity: 0.35;"></span>
+                                    </div>
+                                    <audio id="bg-music" loop crossorigin="anonymous"></audio>
+                                    <button id="play-btn" class="player-btn w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-300 text-sm transition-all hover:scale-110 pointer-events-none">
+                                        <i class="fa-solid fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <a id="ui-comunidad-link" href="#" target="_blank" class="glass-card lg:col-span-1 p-8 flex flex-col justify-center items-center text-center group hover:border-[#5865F2]/50 hover:shadow-[0_0_30px_rgba(88,101,242,0.15)] transition-all">
+                    <div class="w-20 h-20 bg-[#5865F2]/10 rounded-3xl flex items-center justify-center text-[#5865F2] mb-6 group-hover:scale-110 group-hover:bg-[#5865F2] group-hover:text-white transition-all shadow-lg"><i class="fa-brands fa-discord text-4xl group-hover:animate-wiggle"></i></div>
+                    <h3 class="text-2xl font-extrabold text-white mb-2" data-i18n="community_title">Mi Comunidad</h3>
+                    <p class="text-sm text-gray-400 mb-6 leading-relaxed" data-i18n="community_desc">Únete a mi servidor de Discord para charlar, compartir ideas y estar al día con mis proyectos y servidores.</p>
+                    <span class="text-[#5865F2] font-bold text-sm uppercase tracking-widest group-hover:animate-pulse">
+                        <span data-i18n="community_join">Unirse ahora</span> <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </span>
+                </a>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: PROYECTOS PRINCIPALES -->
+        <section id="proyectos" class="mb-14 scroll-mt-32">
+            <div class="flex items-center gap-3 border-b border-white/10 pb-3 mb-6">
+                <div class="w-9 h-9 rounded-xl bg-[#FF007F]/10 border border-[#FF007F]/30 flex items-center justify-center text-[#FF007F] text-lg">
+                    <i class="fa-solid fa-briefcase"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight text-white">
+                    <span data-i18n="sec_projects_title">Mis Proyectos</span>
+                </h3>
+            </div>
+            <div id="ui-proyectos-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </section>
+
+        <!-- SECCIÓN 3: MODPACKS (GALERÍA COMPACTA) -->
+        <section id="modpacks" class="mb-14 scroll-mt-32">
+            <div class="flex items-center gap-3 border-b border-white/10 pb-3 mb-6">
+                <div class="w-9 h-9 rounded-xl bg-[#00FFFF]/10 border border-[#00FFFF]/30 flex items-center justify-center text-[#00FFFF] text-lg">
+                    <i class="fa-solid fa-cubes"></i>
+                </div>
+                <h3 class="text-2xl font-black tracking-tight text-white">
+                    <span data-i18n="sec_modpacks_title">Mis Modpacks</span>
+                </h3>
+            </div>
+            <div id="ui-modpacks-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+        </section>
+
+        <!-- SECCIÓN 4: MI INFRAESTRUCTURA (SISTEMAS OPERATIVOS - ANTES DE REDES) -->
+        <section id="sistemas" class="mb-14 scroll-mt-32">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#00FFFF]/10 border border-[#00FFFF]/30 flex items-center justify-center text-[#00FFFF] text-lg">
+                        <i class="fa-solid fa-server"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black tracking-tight text-white">
+                            <span data-i18n="sec_systems_title">Mi Infraestructura</span>
+                        </h3>
+                        <p class="text-xs md:text-sm text-gray-400 mt-0.5" data-i18n="sec_systems_subtitle">
+                            Servidores dedicados, plataformas y microservicios que he construido y mantengo en funcionamiento continuo 24/7.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 bg-[#0B0B14] px-3.5 py-1.5 rounded-full border border-white/10 text-xs font-mono text-gray-300 w-max shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="hero-systems-summary">5/5 Sistemas Operativos</span>
+                </div>
+            </div>
+            
+            <div id="ui-systems-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Tarjetas dinámicas de alto impacto visual sin IPs ni botones feos -->
+            </div>
+        </section>
+
+        <!-- SECCIÓN 5: REDES SOCIALES & CONTACTO -->
+        <section id="contacto" class="mb-14 scroll-mt-32">
+            <div class="glass-card p-6 md:p-8 border-t-2 border-t-[#9d4edd]/50 shadow-[0_0_30px_rgba(157,78,221,0.05)]">
+                <div class="flex items-center gap-3 border-b border-white/10 pb-3 mb-6">
+                    <div class="w-9 h-9 rounded-xl bg-[#9d4edd]/10 border border-[#9d4edd]/30 flex items-center justify-center text-[#9d4edd] text-lg">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <h3 class="text-2xl font-black tracking-tight text-white">
+                        <span data-i18n="sec_socials_title">Mis Redes</span>
+                    </h3>
+                </div>
+                <div id="ui-redes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+        
+        <footer class="mt-12 flex flex-col items-center justify-center font-mono text-xs text-gray-600 gap-2 border-t border-white/5 pt-8">
+            <p><span data-i18n="footer_dev_by">Diseñado y desarrollado por</span> <span id="ui-footer-name" class="text-gray-400 font-bold"></span> &copy; 2026</p>
+            <div class="flex items-center gap-2 bg-[#0B0B13] border border-white/10 px-3 py-1 rounded-full text-neon-cyan/70 shadow-[0_0_10px_rgba(0,255,255,0.05)] mt-2">
+                <i class="fa-solid fa-eye"></i> <span id="ui-visitas">0</span> <span data-i18n="footer_views">visualizaciones</span>
+            </div>
+        </footer>
+    </main>
+
+    <!-- TOAST DE NOTIFICACIÓN -->
+    <div id="toast" class="toast bg-white/10 backdrop-blur-md border border-neon-cyan/50 text-white px-6 py-3 rounded-full flex items-center gap-3 z-50">
+        <i class="fa-solid fa-check text-neon-cyan"></i><span id="toast-msg">Copiado al portapapeles</span>
+    </div>
+    
+    <script>
+        tailwind.config={theme:{extend:{colors:{neon:{pink:'#FF007F',cyan:'#00FFFF',dark:'#0B0B13',purple:'#9d4edd'}},animation:{'blob':'blob 7s infinite','wiggle':'wiggle 1s ease-in-out infinite','float':'float 3s ease-in-out infinite','bubble':'bubble 1s cubic-bezier(0.25, 1, 0.5, 1) forwards'},keyframes:{blob:{'0%, 100%':{transform:'translate(0, 0) scale(1)'},'33%':{transform:'translate(30px, -50px) scale(1.1)'},'66%':{transform:'translate(-20px, 20px) scale(0.9)'}},wiggle:{'0%, 100%':{transform:'rotate(-12deg) scale(1.2)'},'50%':{transform:'rotate(12deg) scale(1.2)'}},float:{'0%, 100%':{transform:'translateY(0) scale(1.1)'},'50%':{transform:'translateY(-8px) scale(1.1)'}},bubble:{'0%':{transform:'translate(-50%, -50%) scale(1)',opacity:'0.5'},'100%':{transform:'translate(-50%, -100px) scale(0)',opacity:'0'}}}}}}
+    </script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

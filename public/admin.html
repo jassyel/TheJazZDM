@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheJazZDM | Master Control & Infrastructure Hub</title>
+    <!-- Favicons -->
+    <link rel="icon" type="image/jpeg" href="/15315_1.jpg">
+    <link rel="shortcut icon" href="/favicon.ico">
+    
+    <!-- Suprimir advertencia de CDN de Tailwind en consola -->
+    <script>
+        const _origWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+            _origWarn.apply(console, args);
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="relative">
+
+    <!-- CONTENEDOR DE TOASTS FLOTANTES (Responsive: Arriba en móvil, Abajo-Derecha en escritorio) -->
+    <div id="toastContainer" class="fixed top-4 left-3 right-3 sm:top-auto sm:bottom-6 sm:right-6 sm:left-auto sm:max-w-sm z-[99999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- MODAL PROFESIONAL MAESTRO (CONFIRM / ALERT)        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="customModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl transition-all">
+        <div id="modalBox" class="modal-animate glass-panel w-full max-w-md p-6 border shadow-[0_0_60px_rgba(0,255,255,0.15)] relative overflow-hidden">
+            <!-- Barra superior Neón -->
+            <div id="modalTopAccent" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FF007F] via-[#00FFFF] to-[#9d4edd]"></div>
+
+            <div class="flex items-start gap-4 mb-4 mt-1">
+                <div id="modalIconWrap" class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 border shadow-inner">
+                    <i id="modalIcon" class="fa-solid fa-circle-question"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 id="modalTitle" class="text-lg font-extrabold text-white tracking-tight">Título de Acción</h3>
+                    <p id="modalSubtitle" class="text-xs text-gray-400 mt-0.5">Subtítulo explicativo</p>
+                </div>
+                <button onclick="Modal.dismiss()" class="text-gray-500 hover:text-white transition-all text-sm p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Mensaje principal del modal -->
+            <div id="modalMessage" class="text-xs md:text-sm text-gray-300 mb-4 bg-[#090913] p-4 rounded-xl border border-white/5 leading-relaxed select-text">
+                Contenido del modal.
+            </div>
+
+            <!-- Cuadro de Nota / Seguridad / Alcance -->
+            <div id="modalScopeBox" class="hidden mb-4 p-3 rounded-lg border text-xs flex items-center gap-2.5">
+                <i id="modalScopeIcon" class="fa-solid fa-shield-halved text-emerald-400 text-sm"></i>
+                <span id="modalScopeText" class="text-gray-300">Nota de seguridad...</span>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex justify-end gap-3 pt-2">
+                <button id="modalCancelBtn" onclick="Modal.resolve(false)" class="px-4 py-2.5 rounded-lg bg-[#141420] hover:bg-[#1c1c2e] text-gray-300 text-xs font-semibold border border-white/10 transition-all cursor-pointer">
+                    Cancelar
+                </button>
+                <button id="modalConfirmBtn" onclick="Modal.resolve(true)" class="btn-neon text-xs py-2.5 px-5">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- MODAL ESPECIALIZADO: REINICIO DE MINECRAFT        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="mcRestartModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl transition-all">
+        <div class="modal-animate glass-panel w-full max-w-lg p-6 border border-[#00FFFF]/30 shadow-[0_0_60px_rgba(0,255,255,0.2)] relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00FFFF] via-[#9d4edd] to-[#FF007F]"></div>
+
+            <div class="flex items-start gap-4 mb-4 mt-1">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 border bg-[#00FFFF]/10 border-[#00FFFF]/30 text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.25)]">
+                    <i class="fa-solid fa-cube"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-lg font-black text-white tracking-tight" data-i18n="admin_modal_mc_title">Reiniciar Minecraft (Folia / Canvas)</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5" data-i18n="admin_modal_mc_sub">Selecciona el protocolo de aviso para los jugadores conectados</p>
+                </div>
+                <button onclick="closeMcRestartModal()" class="text-gray-500 hover:text-white transition-all text-sm p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 mb-5">
+                <!-- Opción 1: Cuenta Regresiva 3 minutos -->
+                <button onclick="executeMcRestartWithCountdown(180)" class="w-full text-left p-3.5 rounded-xl border border-[#00FFFF]/40 bg-gradient-to-r from-[#00FFFF]/10 to-transparent hover:from-[#00FFFF]/20 hover:border-[#00FFFF] transition-all group cursor-pointer flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-[#00FFFF]/20 text-[#00FFFF] flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-stopwatch"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white group-hover:text-[#00FFFF] transition-colors" data-i18n="admin_modal_mc_opt1_title">Aviso Gradual de 3 Minutos</span>
+                            <span class="text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded" data-i18n="admin_modal_mc_opt1_badge">Recomendado</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-0.5 leading-snug" data-i18n="admin_modal_mc_opt1_desc">
+                            Envía anuncios en chat, títulos y barra de acción a 3m, 2m, 1m, 30s, 15s y cuenta final. Guarda con save-all.
+                        </p>
+                    </div>
+                </button>
+
+                <!-- Opción 2: Cuenta Regresiva 1 minuto -->
+                <button onclick="executeMcRestartWithCountdown(60)" class="w-full text-left p-3.5 rounded-xl border border-white/10 bg-[#090913] hover:border-yellow-400/50 hover:bg-yellow-400/5 transition-all group cursor-pointer flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-yellow-400/10 text-yellow-400 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white group-hover:text-yellow-400 transition-colors" data-i18n="admin_modal_mc_opt2_title">Aviso Rápido de 1 Minuto</span>
+                            <span class="text-[10px] font-bold text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 px-2 py-0.5 rounded" data-i18n="admin_modal_mc_opt2_badge">Rápido</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-0.5 leading-snug" data-i18n="admin_modal_mc_opt2_desc">
+                            Avisos de urgencia a 60s, 30s, 15s y cuenta final. Guarda con save-all antes de reiniciar.
+                        </p>
+                    </div>
+                </button>
+
+                <!-- Opción 3: Reinicio Inmediato -->
+                <button onclick="executeMcRestartDirect()" class="w-full text-left p-3.5 rounded-xl border border-white/10 bg-[#090913] hover:border-red-500/50 hover:bg-red-500/5 transition-all group cursor-pointer flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-bolt-lightning"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white group-hover:text-red-400 transition-colors" data-i18n="admin_modal_mc_opt3_title">Reinicio Inmediato (Sin Avisos)</span>
+                            <span class="text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/30 px-2 py-0.5 rounded" data-i18n="admin_modal_mc_opt3_badge">Directo</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-0.5 leading-snug" data-i18n="admin_modal_mc_opt3_desc">
+                            Guarda chunks y apaga el proceso Java. El supervisor lo levanta en 5 segundos.
+                        </p>
+                    </div>
+                </button>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-white/10">
+                <button onclick="closeMcRestartModal()" class="px-4 py-2.5 rounded-lg bg-[#141420] hover:bg-[#1c1c2e] text-gray-300 text-xs font-semibold border border-white/10 transition-all cursor-pointer" data-i18n="cancel">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- SECCIÓN DE LOGIN CON PERSISTENCIA DE SESIÓN        -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
+        <div id="loginCard" class="glass-panel w-full max-w-sm p-8 text-center border border-white/10 shadow-[0_0_50px_rgba(0,255,255,0.08)]">
+            <div class="w-20 h-20 mx-auto bg-gradient-to-br from-[#121220] to-[#1e1e30] rounded-2xl flex items-center justify-center mb-6 border border-[#00FFFF]/30 shadow-[0_0_25px_rgba(0,255,255,0.2)]">
+                <i class="fa-solid fa-shield-halved text-3xl text-[#00FFFF]"></i>
+            </div>
+            <h1 class="text-2xl font-black mb-1 tracking-tight text-white" data-i18n="admin_login_title">Centro de Control</h1>
+            <p class="text-xs text-gray-400 mb-6 uppercase tracking-widest font-semibold" data-i18n="admin_login_subtitle">Panel Maestro de Infraestructura</p>
+            
+            <form onsubmit="event.preventDefault(); login();" class="flex flex-col gap-4">
+                <input type="text" name="username" value="admin" autocomplete="username" style="display:none;" tabindex="-1" aria-hidden="true">
+                <div class="relative">
+                    <input type="password" id="pwd" placeholder="Ingresa contraseña de acceso..." class="input-field text-center font-mono tracking-wider py-3 pr-10" data-i18n-placeholder="admin_login_placeholder">
+                    <button type="button" onclick="togglePasswordVisibility('pwd', 'pwd-eye')" class="absolute right-3 top-3 text-gray-400 hover:text-white transition-all">
+                        <i id="pwd-eye" class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
+                <button type="submit" id="loginBtn" class="btn-neon w-full py-3 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-key"></i> <span data-i18n="admin_login_btn">Entrar al Panel</span>
+                </button>
+            </form>
+            <p id="loginMsg" class="text-xs text-red-400 mt-4 hidden font-semibold"></p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- DASHBOARD PRINCIPAL                                -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="dashboardSection" class="hidden max-w-7xl mx-auto p-3 sm:p-6 md:p-8 pb-32">
+        
+        <!-- HEADER MAESTRO EN PÍLDORAS (100% RESPONSIVE MÓVIL Y ESCRITORIO) -->
+        <header class="w-full mb-6 pt-2 sm:pt-4 pb-2 z-40">
+            <div class="flex flex-col xl:flex-row items-center justify-between gap-3 sm:gap-4 w-full">
+                
+                <!-- Fila Superior: Marca a la izquierda / Acciones rápidas (Idioma, Guardar, Salir) a la derecha en móvil -->
+                <div class="w-full xl:w-auto flex items-center justify-between xl:justify-start gap-2 shrink-0">
+                    <!-- Marca y Telemetría -->
+                    <div class="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md shadow-sm shrink-0">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-xs font-black tracking-widest uppercase text-white font-mono">TheJazZDM</span>
+                        <span class="text-[10px] text-gray-400 font-mono hidden sm:inline" data-i18n="admin_badge_node">| Nodo HeavyNode</span>
+                    </div>
+
+                    <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-gray-400">
+                        <i class="fa-regular fa-clock text-gray-400"></i>
+                        <span id="live-clock">--:--:--</span>
+                    </div>
+
+                    <!-- Controles en Móvil (Se muestran aquí para ahorrar espacio vertical) -->
+                    <div class="flex xl:hidden items-center gap-1.5 shrink-0">
+                        <!-- Botón Desplegable GitHub Móvil -->
+                        <button onclick="openGitDrawer()" id="nav-git-btn-mobile" class="relative p-1.5 w-8 h-8 rounded-full bg-white/[0.04] border border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10 text-purple-400 transition-all flex items-center justify-center text-xs cursor-pointer" title="Control de Versiones & GitHub">
+                            <i class="fa-brands fa-github text-xs"></i>
+                            <span id="nav-git-badge-mobile" class="hidden absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </button>
+
+                        <div class="flex items-center bg-[#070710]/80 border border-white/10 rounded-full p-0.5 text-[10px] font-bold font-mono">
+                            <button onclick="setLanguage('es')" class="lang-btn-es px-2 py-0.5 rounded-full transition-all cursor-pointer">ES</button>
+                            <button onclick="setLanguage('en')" class="lang-btn-en px-2 py-0.5 rounded-full transition-all cursor-pointer">EN</button>
+                        </div>
+                        <button onclick="saveData()" class="btn-neon text-[11px] py-1.5 px-3 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,255,255,0.25)] font-mono font-bold cursor-pointer">
+                            <i class="fa-solid fa-floppy-disk text-[10px]"></i> <span data-i18n="admin_btn_save">Guardar</span>
+                        </button>
+                        <button onclick="logout()" class="p-1.5 w-8 h-8 rounded-full bg-white/[0.04] border border-white/10 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all flex items-center justify-center text-xs cursor-pointer" title="Cerrar sesión">
+                            <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Columna Central: Píldoras de Navegación de Pestañas (Adaptable a Móvil) -->
+                <div class="w-full xl:w-auto flex justify-center overflow-visible py-1">
+                    <nav class="nav-pill-container inline-flex items-center p-1.5 rounded-full gap-1.5 shrink-0">
+                        <button id="nav-btn-services" onclick="switchNavTab('services')" class="tab-nav active px-4 sm:px-5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap">
+                            <i class="fa-solid fa-server text-[#00FFFF] text-xs"></i>
+                            <span class="hidden sm:inline" data-i18n="admin_tab_services">Consolas y Servicios</span>
+                            <span class="sm:hidden">Servicios</span>
+                        </button>
+                        <button id="nav-btn-zdaemon" onclick="switchNavTab('zdaemon')" class="tab-nav px-4 sm:px-5 py-2 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap">
+                            <i class="fa-solid fa-crosshairs text-[#ef4444] text-xs"></i>
+                            <span class="hidden sm:inline" data-i18n="admin_tab_zdaemon">Split Server</span>
+                            <span class="sm:hidden">Doom Split</span>
+                            <span id="zdaemon-tab-badge" class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                        </button>
+                        <button id="nav-btn-content" onclick="switchNavTab('content')" class="tab-nav px-4 sm:px-5 py-2 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap">
+                            <i class="fa-solid fa-sliders text-[#FF007F] text-xs"></i>
+                            <span class="hidden sm:inline" data-i18n="admin_tab_content">Editar Portafolio</span>
+                            <span class="sm:hidden">Portafolio</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Columna Derecha en Escritorio: Idioma, Guardar y Cerrar Sesión -->
+                <div class="hidden xl:flex items-center gap-2.5 justify-end shrink-0">
+                    <!-- Selector de Idioma -->
+                    <div class="flex items-center bg-[#070710]/80 border border-white/10 rounded-full p-0.5 text-xs font-bold font-mono">
+                        <button onclick="setLanguage('es')" class="lang-btn-es px-2.5 py-1 rounded-full transition-all cursor-pointer">ES</button>
+                        <button onclick="setLanguage('en')" class="lang-btn-en px-2.5 py-1 rounded-full transition-all cursor-pointer">EN</button>
+                    </div>
+
+                    <button onclick="saveData()" class="btn-neon text-xs py-2 px-4 rounded-full flex items-center gap-2 shadow-[0_0_20px_rgba(0,255,255,0.25)] font-mono font-bold cursor-pointer">
+                        <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="admin_btn_save">Guardar Todo</span>
+                    </button>
+                    
+                    <!-- Botón Desplegable GitHub / GitOps Drawer -->
+                    <button onclick="openGitDrawer()" id="nav-git-btn" class="relative px-3 py-2 rounded-full bg-white/[0.04] border border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all flex items-center gap-2 text-xs font-mono cursor-pointer" title="Control de Versiones & GitHub">
+                        <i class="fa-brands fa-github text-sm text-purple-400"></i>
+                        <span class="hidden 2xl:inline">GitHub</span>
+                        <span id="nav-git-badge" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    </button>
+<button onclick="logout()" class="p-2 w-9 h-9 rounded-full bg-white/[0.04] border border-white/10 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all flex items-center justify-center text-xs cursor-pointer" title="Cerrar sesión">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ══════════════════════════════════════════════════ -->
+        <!-- PESTAÑA 1: CONSOLAS Y SERVICIOS INDEPENDIENTES     -->
+        <!-- ══════════════════════════════════════════════════ -->
+        <div id="view-services" class="flex flex-col gap-6">
+            
+            <!-- PANEL GENERAL DE RAM & RECURSOS -->
+            <div class="glass-panel p-4 sm:p-5 bg-gradient-to-r from-[#0d0d1a] via-[#101024] to-[#14142a] border border-[#00FFFF]/25">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
+                    <div class="flex items-center gap-3 sm:gap-4 w-full md:w-auto">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#00FFFF]/10 border border-[#00FFFF]/30 flex items-center justify-center text-[#00FFFF] text-xl sm:text-2xl shadow-[0_0_25px_rgba(0,255,255,0.2)] shrink-0">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[11px] sm:text-xs uppercase font-extrabold tracking-wider text-gray-400 truncate" data-i18n="admin_ram_title">Memoria RAM del Servidor</div>
+                            <div class="text-xl sm:text-2xl font-black text-white flex items-center gap-1.5 sm:gap-2 mt-0.5 font-mono flex-wrap">
+                                <span id="ram-used">0</span> <span class="text-xs font-normal text-gray-400">MB</span> 
+                                <span class="text-gray-500 font-light">/</span> 
+                                <span id="ram-total">6000</span> <span class="text-xs font-normal text-gray-400">MB</span>
+                                <span id="ram-pct" class="text-xs font-bold bg-[#00FFFF]/15 text-[#00FFFF] px-2 py-0.5 rounded-full border border-[#00FFFF]/30">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BARRA DE PROGRESO DE RAM -->
+                    <div class="flex-1 max-w-xl w-full">
+                        <div class="w-full bg-[#05050a] h-3.5 rounded-full overflow-hidden border border-white/10 p-0.5">
+                            <div id="ram-bar" class="h-full bg-gradient-to-r from-cyan-400 via-pink-500 to-red-500 rounded-full w-0 transition-all duration-700 shadow-[0_0_20px_rgba(0,255,255,0.5)]"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-gray-400 font-mono mt-1.5">
+                            <span>0 MB</span>
+                            <span id="uptime-display" class="truncate max-w-[150px] sm:max-w-none text-center">Uptime: Calculando...</span>
+                            <span id="ram-max-display">6000 MB</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-auto flex items-center justify-end">
+                        <button onclick="fetchSystemStatus(true)" id="refreshStatusBtn" class="btn-action text-xs py-2 px-3.5 w-full md:w-auto justify-center">
+                            <i class="fa-solid fa-rotate"></i> <span data-i18n="admin_btn_refresh">Actualizar Estados</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TARJETAS DE SERVICIOS (CONTROL INDEPENDIENTE) -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cubes text-[#00FFFF]"></i> <span data-i18n="admin_modules_title">Módulos de Procesos en Ejecución</span>
+                    </h2>
+                    <span class="text-xs text-gray-500 font-medium" data-i18n="admin_modules_subtitle">Contenedor HeavyNode 100% persistente</span>
+                </div>
+
+                <!-- BANNER DE CUENTA REGRESIVA EN VIVO -->
+                <div id="countdown-banner" class="hidden mb-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/20 via-pink-500/15 to-purple-500/20 border border-amber-500/40 shadow-[0_0_25px_rgba(245,158,11,0.2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-400 text-xl shrink-0 animate-pulse">
+                            <i class="fa-solid fa-stopwatch"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] uppercase font-black tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full" data-i18n="admin_cd_active">Reinicio en Curso</span>
+                                <h4 class="text-sm font-bold text-white" data-i18n="admin_cd_title">Cuenta Regresiva Activa: Minecraft</h4>
+                            </div>
+                            <p class="text-xs text-gray-300 mt-0.5">
+                                <span data-i18n="admin_cd_remaining">Tiempo restante:</span> <strong id="countdown-timer-text" class="text-amber-300 font-mono font-bold text-sm">--:--</strong> <span data-i18n="admin_cd_notice">(Avisos periódicos a los jugadores)</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="cancelActiveCountdown()" class="btn-action text-xs py-2 px-4 bg-red-600/30 hover:bg-red-600/60 text-red-300 border border-red-500/50 font-bold flex items-center gap-2 shadow-sm shrink-0">
+                        <i class="fa-solid fa-ban"></i> <span data-i18n="admin_cd_cancel">Cancelar Reinicio</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="services-grid">
+                    <!-- Se renderiza dinámicamente -->
+                </div>
+            </div>
+
+            <!-- TERMINAL MULTI-CONSOLA EN VIVO -->
+            <div class="glass-panel p-5 border border-[#00FFFF]/25 flex flex-col gap-3.5">
+                <!-- FILA 1: ESTADO Y CONTROLES DEL TERMINAL -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/10 pb-3">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div class="flex items-center gap-1.5 bg-[#090914] px-2.5 py-1.5 rounded-lg border border-white/10">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <span class="font-bold text-xs uppercase tracking-wider text-gray-400" data-i18n="admin_term_title">Consola en Vivo:</span>
+                        <span id="active-console-badge" class="font-mono text-xs font-bold text-[#00FFFF] bg-[#090914] px-3 py-1 rounded-lg border border-[#00FFFF]/30 shadow-inner flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Minecraft (Folia / Canvas)
+                        </span>
+                    </div>
+
+                    <!-- CONTROLES DEL TERMINAL -->
+                    <div class="flex flex-wrap items-center gap-1.5 justify-end w-full sm:w-auto">
+                        <div class="flex items-center bg-[#090916] border border-white/10 rounded-lg p-0.5 text-[11px] font-mono">
+                            <span class="px-2 text-gray-500 font-bold hidden sm:inline"><i class="fa-solid fa-bars-staggered text-[10px]"></i> Líneas:</span>
+                            <button onclick="setLogLines(250)" id="lines-btn-250" class="log-lines-btn px-2 py-0.5 rounded text-gray-400 hover:text-white transition-all cursor-pointer">250</button>
+                            <button onclick="setLogLines(500)" id="lines-btn-500" class="log-lines-btn px-2 py-0.5 rounded text-gray-400 hover:text-white transition-all cursor-pointer">500</button>
+                            <button onclick="setLogLines(1000)" id="lines-btn-1000" class="log-lines-btn active px-2 py-0.5 rounded text-[#00FFFF] bg-[#00FFFF]/10 font-bold border border-[#00FFFF]/30 transition-all cursor-pointer">1000</button>
+                            <button onclick="setLogLines(2500)" id="lines-btn-2500" class="log-lines-btn px-2 py-0.5 rounded text-gray-400 hover:text-white transition-all cursor-pointer" title="Cargar historial extendido del arranque">2500</button>
+                        </div>
+                        <button onclick="toggleAutoScroll()" id="autoscroll-btn" class="btn-action text-xs text-gray-500 border-white/10 hover:text-white transition-all cursor-pointer" title="Activar/desactivar desplazamiento automático">
+                            <i class="fa-solid fa-arrow-down"></i> <span data-i18n="admin_term_autoscroll_off">Auto-Scroll: OFF</span>
+                        </button>
+                        <button onclick="copyTerminalLogs()" class="btn-action text-xs" title="Copiar log">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                        <button onclick="downloadTerminalLog()" class="btn-action text-xs" title="Descargar log">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                        <button onclick="clearTerminalView()" class="btn-action text-xs" title="Limpiar pantalla">
+                            <i class="fa-solid fa-eraser"></i>
+                        </button>
+                        <button onclick="refreshActiveLogs(true)" class="btn-action text-xs" title="Refrescar">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- FILA 2: SELECTOR DE CONSOLAS EN TARJETAS MODERNAS (NUNCA SE CORTAN) -->
+                <div class="w-full bg-[#06060e] p-1.5 rounded-xl border border-white/10 shadow-inner">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <button onclick="selectConsole('minecraft')" id="cbtn-minecraft" class="console-tab-btn active flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-lg font-bold transition-all cursor-pointer bg-[#00FFFF]/15 text-[#00FFFF] border border-[#00FFFF]/40 shadow-[0_0_15px_rgba(0,255,255,0.15)]">
+                            <i class="fa-solid fa-cube text-emerald-400 text-sm"></i>
+                            <span class="truncate">Minecraft (Folia)</span>
+                        </button>
+                        <button onclick="selectConsole('velocity')" id="cbtn-velocity" class="console-tab-btn flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-lg font-semibold transition-all cursor-pointer bg-white/[0.02] text-gray-400 hover:text-white hover:bg-white/[0.05] border border-white/5">
+                            <i class="fa-solid fa-shield-halved text-amber-400 text-sm"></i>
+                            <span class="truncate">Velocity Proxy</span>
+                        </button>
+                        <button onclick="selectConsole('exolive')" id="cbtn-exolive" class="console-tab-btn flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-lg font-semibold transition-all cursor-pointer bg-white/[0.02] text-gray-400 hover:text-white hover:bg-white/[0.05] border border-white/5">
+                            <i class="fa-solid fa-broadcast-tower text-purple-400 text-sm"></i>
+                            <span class="truncate">ExoLive V2</span>
+                        </button>
+                        <button onclick="selectConsole('portfolio')" id="cbtn-portfolio" class="console-tab-btn flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-lg font-semibold transition-all cursor-pointer bg-white/[0.02] text-gray-400 hover:text-white hover:bg-white/[0.05] border border-white/5">
+                            <i class="fa-solid fa-globe text-cyan-400 text-sm"></i>
+                            <span class="truncate">Portafolio Web</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANTALLA DEL TERMINAL -->
+                <div class="terminal-container overflow-hidden">
+                    <div id="console-terminal" class="terminal-content h-96 p-4 overflow-y-auto text-xs whitespace-pre leading-relaxed select-text font-mono text-gray-300">
+                        Cargando stream de log...
+                    </div>
+                    
+                    <!-- INPUT DE LÍNEA DE COMANDOS (CLI) -->
+                    <div class="p-2.5 bg-[#070712] border-t border-white/10 flex flex-col gap-2">
+                        <div class="flex items-center gap-2">
+                            <span id="cmd-prompt-label" class="text-[#00FFFF] font-mono font-extrabold text-xs pl-2 shrink-0">MC &gt;</span>
+                            <textarea id="cmd-input" rows="1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Comando Minecraft (ej: list, tps, time set day, save-all, op)..." class="text-xs font-mono py-2 px-3 flex-1 bg-[#05050e] border border-white/10 rounded-lg text-white focus:border-[#00FFFF] focus:outline-none resize-none h-9 leading-snug" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendConsoleCommand();}"></textarea>
+                            <button onclick="sendConsoleCommand()" class="btn-action text-xs py-1.5 px-3 bg-[#00FFFF]/10 text-[#00FFFF] border-[#00FFFF]/30 hover:bg-[#00FFFF]/20">
+                                <i class="fa-solid fa-play text-[10px]"></i> <span data-i18n="admin_term_send">Enviar</span>
+                            </button>
+                        </div>
+                        <div id="cmd-quick-chips" class="flex flex-wrap items-center gap-1.5 pl-2 text-[10px] text-gray-400 font-mono">
+                            <!-- Rellenado dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROGRAMADOR AUTOMÁTICO MULTI-SERVICIO SEGURO -->
+            <div class="glass-panel p-6 border border-[#00FFFF]/30 bg-gradient-to-r from-[#101020] via-[#121225] to-[#15152c]">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#00FFFF]/10 border border-[#00FFFF]/40 flex items-center justify-center text-[#00FFFF] text-2xl shadow-[0_0_20px_rgba(0,255,255,0.2)] shrink-0">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-black text-white" data-i18n="admin_sched_title">Programador de Reinicios Multi-Servicio</h3>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-0.5 max-w-2xl leading-relaxed" data-i18n="admin_sched_desc">
+                                Configura horarios automáticos individuales para cada servicio. Ningún proceso afectará a los demás.
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="saveAllSchedules()" class="btn-neon text-xs py-2.5 px-5 font-bold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="admin_sched_btn_save">Guardar Programación</span>
+                    </button>
+                </div>
+
+                <!-- Lista de servicios programables -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Minecraft -->
+                    <div class="bg-[#080814] p-4 rounded-xl border border-white/10 flex flex-col justify-between gap-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-cube text-[#00FFFF] text-base"></i>
+                                <div>
+                                    <div class="text-xs font-bold text-white">Minecraft (Folia)</div>
+                                    <div class="text-[10px] text-gray-400 font-sans">Reinicia solo Java</div>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="sched-toggle-minecraft" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00FFFF]"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-gray-400 font-bold uppercase" data-i18n="admin_sched_hour">Hora:</span>
+                            <input type="time" id="sched-time-minecraft" value="02:00" onchange="updateMcScheduleHint()" class="bg-[#10101c] border border-white/15 text-white rounded-lg px-2 py-1 text-xs font-mono outline-none focus:border-[#00FFFF] flex-1">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-gray-400 font-bold uppercase" data-i18n="admin_sched_notice">Aviso:</span>
+                            <select id="sched-cd-minecraft" onchange="updateMcScheduleHint()" class="bg-[#10101c] border border-white/15 text-white rounded-lg px-2 py-1 text-xs outline-none focus:border-[#00FFFF] flex-1">
+                                <option value="180">3 Minutos (Recomendado)</option>
+                                <option value="60">1 Minuto (Rápido)</option>
+                                <option value="0">Directo (Sin Aviso)</option>
+                            </select>
+                        </div>
+                        <div id="sched-mc-hint" class="text-[10px] text-cyan-400 font-mono mt-0.5">
+                            Reinicio exacto a las 02:00 (Avisos inician a las 01:57)
+                        </div>
+                    </div>
+
+                    <!-- Velocity Proxy -->
+                    <div class="bg-[#080814] p-4 rounded-xl border border-white/10 flex flex-col justify-between gap-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-shield-halved text-amber-400 text-base"></i>
+                                <div>
+                                    <div class="text-xs font-bold text-white">Velocity Proxy</div>
+                                    <div class="text-[10px] text-gray-400 font-sans">Proxy de red y puertos</div>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="sched-toggle-velocity" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-400"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-gray-400 font-bold uppercase" data-i18n="admin_sched_hour">Hora:</span>
+                            <input type="time" id="sched-time-velocity" value="04:00" class="bg-[#10101c] border border-white/15 text-white rounded-lg px-2 py-1 text-xs font-mono outline-none focus:border-amber-400 flex-1">
+                        </div>
+                        <div class="text-[10px] text-gray-500 italic">Reinicio limpio liberando puertos</div>
+                    </div>
+
+                    <!-- ExoLive V2 -->
+                    <div class="bg-[#080814] p-4 rounded-xl border border-white/10 flex flex-col justify-between gap-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-tower-broadcast text-purple-400 text-base"></i>
+                                <div>
+                                    <div class="text-xs font-bold text-white">ExoLive V2</div>
+                                    <div class="text-[10px] text-gray-400 font-sans">Panel y webhooks Node</div>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="sched-toggle-exolive" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-400"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-gray-400 font-bold uppercase" data-i18n="admin_sched_hour">Hora:</span>
+                            <input type="time" id="sched-time-exolive" value="05:00" class="bg-[#10101c] border border-white/15 text-white rounded-lg px-2 py-1 text-xs font-mono outline-none focus:border-purple-400 flex-1">
+                        </div>
+                        <div class="text-[10px] text-gray-500 italic">Reinicia API sin tocar otros</div>
+                    </div>
+
+                    <!-- Portfolio Web -->
+                    <div class="bg-[#080814] p-4 rounded-xl border border-white/10 flex flex-col justify-between gap-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-globe text-emerald-400 text-base"></i>
+                                <div>
+                                    <div class="text-xs font-bold text-white">Portfolio Web App</div>
+                                    <div class="text-[10px] text-gray-400 font-sans">Panel de control</div>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="sched-toggle-portfolio" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-400"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-gray-400 font-bold uppercase" data-i18n="admin_sched_hour">Hora:</span>
+                            <input type="time" id="sched-time-portfolio" value="07:00" class="bg-[#10101c] border border-white/15 text-white rounded-lg px-2 py-1 text-xs font-mono outline-none focus:border-emerald-400 flex-1">
+                        </div>
+                        <div class="text-[10px] text-gray-500 italic">Recarga el proceso en 2s</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ══════════════════════════════════════════════════ -->
+        <!-- PESTAÑA 2: SPLIT SERVER (ZDAEMON / DOOM ENGINE)   -->
+        <!-- ══════════════════════════════════════════════════ -->
+        <div id="view-zdaemon" class="hidden flex flex-col gap-6">
+
+            <!-- PANEL GENERAL DEL SPLIT SERVER: ESTADO & RAM -->
+            <div class="glass-panel p-5 bg-gradient-to-r from-[#140810] via-[#160d1f] to-[#0c0c1e] border border-[#ef4444]/30 shadow-[0_0_35px_rgba(239,68,68,0.08)]">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-[#ef4444]/15 border border-[#ef4444]/40 flex items-center justify-center text-[#ef4444] text-2xl shadow-[0_0_25px_rgba(239,68,68,0.25)] shrink-0">
+                            <i class="fa-solid fa-crosshairs"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs uppercase font-extrabold tracking-wider text-gray-400" data-i18n="admin_zd_subtitle">Split Server</span>
+                                <span id="zd-conn-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-gray-500/10 text-gray-400 border-gray-500/30 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> <span data-i18n="admin_zd_verifying">Verificando...</span>
+                                </span>
+                            </div>
+                            <div class="text-xl md:text-2xl font-black text-white flex items-center gap-2 mt-0.5">
+                                <span data-i18n="admin_zd_title">ZDaemon & Doom Engine</span>
+                                <span class="text-xs font-mono font-bold bg-[#ef4444]/10 text-[#f87171] border border-[#ef4444]/30 px-2 py-0.5 rounded-full">185.73.243.42:25765</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1 flex flex-wrap items-center gap-2 font-mono">
+                                <span><i class="fa-solid fa-microchip text-red-400"></i> RAM: <strong id="zd-ram-used" class="text-white">0</strong> / <strong id="zd-ram-total" class="text-white">6144</strong> MB</span>
+                                <span class="text-gray-600">|</span>
+                                <span><i class="fa-solid fa-gauge text-cyan-400"></i> CPU: <strong id="zd-cpu-used" class="text-white">0%</strong></span>
+                                <span class="text-gray-600">|</span>
+                                <span><i class="fa-solid fa-clock text-amber-400"></i> <span id="zd-uptime">Uptime: --</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BARRA DE RAM SPLIT SERVER -->
+                    <div class="flex-1 max-w-md w-full">
+                        <div class="flex justify-between text-xs text-gray-400 font-mono mb-1">
+                            <span data-i18n="admin_zd_mem">Uso de Memoria</span>
+                            <span id="zd-ram-pct" class="font-bold text-red-400">0%</span>
+                        </div>
+                        <div class="w-full bg-[#05050a] h-3 rounded-full overflow-hidden border border-white/10 p-0.5">
+                            <div id="zd-ram-bar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full w-0 transition-all duration-700 shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
+                        </div>
+                    </div>
+
+                    <!-- BOTONES DE ACCIÓN GLOBAL EN SPLIT SERVER -->
+                    <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                        <button onclick="actionSplitServer('all', 'start')" id="btn-zd-startall" class="btn-action btn-start text-xs py-2 px-3.5 flex-1 lg:flex-none font-bold">
+                            <i class="fa-solid fa-play"></i> <span data-i18n="admin_zd_btn_startall">Encender Todo</span>
+                        </button>
+                        <button onclick="actionSplitServer('all', 'stop')" id="btn-zd-stopall" class="btn-action btn-action-danger text-xs py-2 px-3.5 flex-1 lg:flex-none font-bold">
+                            <i class="fa-solid fa-power-off"></i> <span data-i18n="admin_zd_btn_stopall">Detener Todo</span>
+                        </button>
+                        <button onclick="actionSplitServer('all', 'restart')" id="btn-zd-restartall" class="btn-action btn-restart text-xs py-2 px-3.5 flex-1 lg:flex-none font-bold">
+                            <i class="fa-solid fa-rotate"></i> <span data-i18n="admin_zd_btn_restartall">Reiniciar Todo</span>
+                        </button>
+                        <button onclick="fetchSplitServerStatus(true)" id="btn-zd-refresh" class="btn-action text-xs py-2 px-3" title="Refrescar Estado">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADVERTENCIA SI ESTÁ DESCONECTADO -->
+            <div id="zd-offline-alert" class="hidden p-4 rounded-xl bg-red-950/40 border border-red-500/40 shadow-[0_0_30px_rgba(239,68,68,0.2)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 text-xl shrink-0 animate-pulse">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-white">Split Server Desconectado o Inactivo</h4>
+                        <p class="text-xs text-gray-300 mt-0.5">
+                            No se detectó respuesta en <code class="bg-black/40 px-1 py-0.5 rounded text-red-300">185.73.243.42:25765</code>. 
+                            Verifica que hayas iniciado <code class="bg-black/40 px-1 py-0.5 rounded text-amber-300">bash start_all_nuevo.sh</code> en la consola del servidor de HeavyNode.
+                        </p>
+                    </div>
+                </div>
+                <button onclick="fetchSplitServerStatus(true)" class="btn-action text-xs py-2 px-4 bg-red-600/30 hover:bg-red-600/50 text-red-200 border border-red-500/50 font-bold shrink-0">
+                    <i class="fa-solid fa-rotate"></i> Reintentar Conexión
+                </button>
+            </div>
+
+            <!-- TARJETAS DE LOS 6 SERVIDORES DE DOOM -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-extrabold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-crosshairs text-[#ef4444]"></i> <span data-i18n="admin_zd_sec_title">Servidores ZDaemon & Zandronum Aislados</span>
+                    </h2>
+                    <span class="text-xs text-gray-500 font-medium" data-i18n="admin_zd_sec_sub">Control independiente 100% individual</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="zdaemon-grid">
+                    <!-- Se renderiza dinámicamente -->
+                </div>
+            </div>
+
+            <!-- CONSOLA EN VIVO DE DOOM / ZDAEMON -->
+            <div class="glass-panel p-5 border border-[#ef4444]/30 flex flex-col gap-4">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1.5 bg-[#090914] px-2.5 py-1 rounded-lg border border-white/10">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-terminal text-[#ef4444]"></i> <span data-i18n="admin_zd_console_title">Consola ZDaemon / Doom</span>
+                            </h3>
+                            <span class="text-[11px] text-gray-400" data-i18n="admin_zd_console_sub">Salida de consola y registro en vivo del Split Server</span>
+                        </div>
+                    </div>
+
+                    <!-- SELECTOR DE LOG DE SERVICIO -->
+                    <div class="flex flex-wrap gap-1.5 bg-[#080812] p-1 rounded-xl border border-white/10">
+                        <button onclick="selectZDaemonLogTab('money')" id="zd-tab-money" class="zd-log-tab active px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-crosshairs text-red-400"></i> Money
+                        </button>
+                        <button onclick="selectZDaemonLogTab('delta')" id="zd-tab-delta" class="zd-log-tab px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved text-blue-400"></i> Delta
+                        </button>
+                        <button onclick="selectZDaemonLogTab('la')" id="zd-tab-la" class="zd-log-tab px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-crosshairs text-emerald-400"></i> LA Adv
+                        </button>
+                        <button onclick="selectZDaemonLogTab('ctf')" id="zd-tab-ctf" class="zd-log-tab px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-flag text-purple-400"></i> CTF
+                        </button>
+                        <button onclick="selectZDaemonLogTab('agent')" id="zd-tab-agent" class="zd-log-tab px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-robot text-gray-400"></i> Agente
+                        </button>
+                    </div>
+
+                    <!-- CONTROLES DE LA CONSOLA -->
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none bg-[#090914] px-2.5 py-1.5 rounded-lg border border-white/10">
+                            <input type="checkbox" id="zd-autoscroll" checked class="rounded accent-[#ef4444]">
+                            <span data-i18n="admin_zd_autoscroll">Auto-scroll</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none bg-[#090914] px-2.5 py-1.5 rounded-lg border border-white/10">
+                            <input type="checkbox" id="zd-autorefresh" checked class="rounded accent-[#ef4444]">
+                            <span data-i18n="admin_zd_autorefresh">Auto-refresco (3s)</span>
+                        </label>
+                        <button onclick="fetchSplitServerLogs(activeZDaemonLog)" class="btn-action text-xs py-1.5 px-3" title="Refrescar ahora">
+                            <i class="fa-solid fa-rotate"></i>
+                        </button>
+                        <button onclick="copyZDaemonLogs()" class="btn-action text-xs py-1.5 px-3" title="Copiar logs">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                        <button onclick="clearZDaemonTerminal()" class="btn-action text-xs py-1.5 px-3" title="Limpiar pantalla">
+                            <i class="fa-solid fa-broom"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANTALLA TERMINAL -->
+                <div class="relative">
+                    <pre id="zd-terminal-content" class="bg-[#05050c] p-4 rounded-xl font-mono text-[11px] md:text-xs text-[#a3e635] max-h-[380px] min-h-[260px] overflow-y-auto leading-relaxed border border-white/10 shadow-inner whitespace-pre-wrap select-text">Cargando registros del Split Server...</pre>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ══════════════════════════════════════════════════ -->
+        <!-- PESTAÑA 3: EDITOR DE CONTENIDO DEL PORTAFOLIO     -->
+        <!-- ══════════════════════════════════════════════════ -->
+        <div id="view-content" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- COLUMNA 1 -->
+            <div class="glass-panel p-6 flex flex-col gap-4">
+                <h2 class="text-base font-bold border-b border-white/10 pb-3 text-[#FF007F] flex items-center gap-2">
+                    <i class="fa-regular fa-id-badge"></i> <span data-i18n="admin_ed_profile">Perfil Personal</span>
+                </h2>
+                <div><label class="label-text" data-i18n="admin_ed_name">Nombre</label><input type="text" id="p-nombre" class="input-field"></div>
+                <div><label class="label-text" data-i18n="admin_ed_role">Título / Cargo</label><input type="text" id="p-titulo" class="input-field"></div>
+                <div><label class="label-text" data-i18n="admin_ed_bio">Biografía</label><textarea id="p-bio" class="input-field h-24 resize-none"></textarea></div>
+                
+                <h2 class="text-base font-bold border-b border-white/10 pb-3 text-[#FF007F] mt-4 flex items-center gap-2">
+                    <i class="fa-solid fa-image"></i> <span data-i18n="admin_ed_files">Archivos y SEO</span>
+                </h2>
+                <div>
+                    <label class="label-text" data-i18n="admin_ed_photo">Foto de Perfil</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="p-img" class="input-field flex-1" readonly>
+                        <input type="file" id="file-img" class="hidden" accept="image/*" onchange="uploadFile('file-img', 'p-img')">
+                        <button onclick="document.getElementById('file-img').click()" class="btn-action"><i class="fa-solid fa-upload"></i> <span data-i18n="admin_ed_upload">Subir</span></button>
+                    </div>
+                </div>
+                <div>
+                    <label class="label-text" data-i18n="admin_ed_favicon">Favicon (Pestaña)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="s-fav" class="input-field flex-1" readonly>
+                        <input type="file" id="file-fav" class="hidden" accept="image/*" onchange="uploadFile('file-fav', 's-fav')">
+                        <button onclick="document.getElementById('file-fav').click()" class="btn-action"><i class="fa-solid fa-upload"></i> <span data-i18n="admin_ed_upload">Subir</span></button>
+                    </div>
+                </div>
+                <div><label class="label-text" data-i18n="admin_ed_tab_title">Título de Pestaña</label><input type="text" id="s-tit" class="input-field"></div>
+            </div>
+            
+            <!-- COLUMNA 2 -->
+            <div class="flex flex-col gap-6">
+                <div class="glass-panel p-6 flex flex-col gap-4">
+                    <h2 class="text-base font-bold border-b border-white/10 pb-3 text-[#00FFFF] flex items-center gap-2">
+                        <i class="fa-solid fa-music"></i> <span data-i18n="admin_ed_music">Música y Comunidad</span>
+                    </h2>
+                    <div><label class="label-text" data-i18n="admin_ed_song">Nombre Canción</label><input type="text" id="m-tit" class="input-field"></div>
+                    <div><label class="label-text" data-i18n="admin_ed_artist">Artista</label><input type="text" id="m-art" class="input-field"></div>
+                    <div>
+                        <label class="label-text" data-i18n="admin_ed_vol">Volumen de inicio</label>
+                        <div class="flex items-center gap-3">
+                            <input type="range" id="m-vol" min="0" max="100" class="flex-1 accent-[#00FFFF]">
+                            <span id="m-vol-val" class="font-mono text-sm w-12 text-right text-[#00FFFF]">50%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label-text" data-i18n="admin_ed_audio">Archivo MP3</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="m-file" class="input-field flex-1" readonly>
+                            <input type="file" id="file-mus" class="hidden" accept="audio/*" onchange="uploadFile('file-mus', 'm-file')">
+                            <button onclick="document.getElementById('file-mus').click()" class="btn-action"><i class="fa-solid fa-upload"></i> <span data-i18n="admin_ed_upload">Subir</span></button>
+                        </div>
+                    </div>
+                    <div class="mt-2"><label class="label-text text-[#5865F2]" data-i18n="admin_ed_discord">Enlace Servidor Discord</label><input type="text" id="c-url" class="input-field" placeholder="https://discord.gg/..."></div>
+                </div>
+                
+                <div class="glass-panel p-6 flex flex-col gap-4 border border-[#00FFFF]/30">
+                    <h2 class="text-base font-bold border-b border-[#00FFFF]/30 pb-3 text-[#00FFFF] flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> <span data-i18n="admin_ed_asset_mgr">Gestor de Archivos (Para Modpacks)</span>
+                    </h2>
+                    <p class="text-xs text-gray-400" data-i18n="admin_ed_asset_desc">Sube fotos o assets aquí para usarlos en tus tarjetas de modpacks.</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="gen-upload-name" class="input-field flex-1 font-mono text-xs" readonly placeholder="El nombre del archivo aparecerá aquí...">
+                        <input type="file" id="file-gen" class="hidden" accept="image/*" onchange="uploadFile('file-gen', 'gen-upload-name')">
+                        <button onclick="document.getElementById('file-gen').click()" class="btn-action text-[#00FFFF] border-[#00FFFF]/40"><i class="fa-solid fa-upload"></i> <span data-i18n="admin_ed_upload">Subir Foto</span></button>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 flex flex-col gap-4 border border-red-500/30">
+                    <h2 class="text-base font-bold border-b border-red-500/30 pb-3 text-red-400 flex items-center gap-2">
+                        <i class="fa-solid fa-key"></i> <span data-i18n="admin_ed_security">Seguridad del Panel</span>
+                    </h2>
+                    <div>
+                        <label class="label-text" data-i18n="admin_ed_password">Contraseña de Administrador</label>
+                        <div class="relative">
+                            <input type="password" id="admin-pass" class="input-field font-mono pr-10">
+                            <button type="button" onclick="togglePasswordVisibility('admin-pass', 'admin-eye')" class="absolute right-3 top-3 text-gray-400 hover:text-white transition-all">
+                                <i id="admin-eye" class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODPACKS -->
+            <div class="glass-panel p-6 md:col-span-2">
+                <div class="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                    <h2 class="text-base font-bold text-[#00FFFF] flex items-center gap-2"><i class="fa-solid fa-cubes"></i> <span data-i18n="admin_ed_modpacks">Módulos de Modpacks (CurseForge)</span></h2>
+                    <button onclick="addModpack()" class="btn-action bg-[#00FFFF]/10 text-[#00FFFF] border-[#00FFFF]/30 hover:bg-[#00FFFF]/20"><i class="fa-solid fa-plus"></i> <span data-i18n="admin_ed_add_modpack">Añadir Modpack</span></button>
+                </div>
+                <div id="modpacks-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- PROYECTOS -->
+            <div class="glass-panel p-6 md:col-span-2">
+                <div class="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                    <h2 class="text-base font-bold text-[#FF007F] flex items-center gap-2"><i class="fa-solid fa-briefcase"></i> <span data-i18n="admin_ed_projects">Tarjetas de Proyectos Destacados</span></h2>
+                    <button onclick="addProject()" class="btn-action bg-[#FF007F]/10 text-[#FF007F] border-[#FF007F]/30 hover:bg-[#FF007F]/20"><i class="fa-solid fa-plus"></i> <span data-i18n="admin_ed_add_project">Añadir Proyecto</span></button>
+                </div>
+                <div id="proyectos-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- REDES -->
+            <div class="glass-panel p-6 md:col-span-2">
+                <div class="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                    <h2 class="text-base font-bold text-[#9d4edd] flex items-center gap-2"><i class="fa-solid fa-link"></i> <span data-i18n="admin_ed_socials">Módulos de Redes y Contacto</span></h2>
+                    <button onclick="addRed()" class="btn-action bg-[#9d4edd]/10 text-[#9d4edd] border-[#9d4edd]/30 hover:bg-[#9d4edd]/20"><i class="fa-solid fa-plus"></i> <span data-i18n="admin_ed_add_social">Añadir Red</span></button>
+                </div>
+                <div id="redes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS MODULARES -->
+    <script src="/js/i18n.js"></script>
+    <script src="/js/admin.js"></script>
+
+    <!-- SLIDE-OVER DRAWER: CONTROL DE VERSIONES & GITHUB (ESTILO ECLIPSEMC) -->
+    <div id="git-drawer" class="git-drawer fixed inset-0 z-50 pointer-events-none transition-all duration-300" hidden>
+        <!-- Telón de fondo (Backdrop) con blur -->
+        <div id="git-drawer-backdrop" onclick="closeGitDrawer()" class="absolute inset-0 bg-[#03000a]/75 backdrop-blur-md opacity-0 transition-opacity duration-300 pointer-events-none cursor-pointer"></div>
+        
+        <!-- Panel lateral que se desliza de derecha a izquierda -->
+        <aside id="git-drawer-panel" class="absolute top-0 right-0 h-full w-full max-w-[480px] bg-[#0c0a1a] border-l border-purple-500/20 shadow-[-30px_0_90px_rgba(0,0,0,0.85)] flex flex-col transform translate-x-full transition-transform duration-300 ease-out pointer-events-auto z-10 overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-git-title">
+            <!-- Línea superior decorativa con degradado -->
+            <div class="h-[2px] w-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 shrink-0"></div>
+
+            <!-- Cabecera del Drawer -->
+            <div class="px-5 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between gap-4 bg-[#090814]/90 shrink-0">
+                <div>
+                    <span class="text-[10px] font-mono tracking-widest uppercase text-purple-400 font-extrabold flex items-center gap-1.5">
+                        <i class="fa-brands fa-github"></i> GITHUB GITOPS &amp; DESPLIEGUES
+                    </span>
+                    <h2 id="drawer-git-title" class="text-lg font-black text-white tracking-tight flex items-center gap-2 mt-0.5">
+                        Control de Versiones
+                    </h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="checkGitHubUpdates(true)" id="git-drawer-refresh-btn" class="w-9 h-9 rounded-full bg-white/[0.04] hover:bg-purple-500/20 border border-white/10 hover:border-purple-500/40 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer" title="Comprobar actualizaciones ahora">
+                        <i id="git-drawer-spinner" class="fa-solid fa-arrows-rotate text-xs"></i>
+                    </button>
+                    <button onclick="closeGitDrawer()" class="w-9 h-9 rounded-full bg-white/[0.04] hover:bg-red-500/20 border border-white/10 hover:border-red-500/40 text-gray-300 hover:text-red-300 flex items-center justify-center transition-all cursor-pointer" title="Cerrar panel (Esc)">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenido desplazable (Scrollable Body) -->
+            <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-6 drawer-scroll">
+                
+                <!-- SECCIÓN 1: EXOLIVE V2 -->
+                <div class="glass-panel p-4 sm:p-5 border border-purple-500/30 bg-gradient-to-br from-[#120e24] via-[#0d0a1c] to-[#080612] flex flex-col gap-4">
+                    <!-- Encabezado de la tarjeta ExoLive -->
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-400 flex items-center justify-center text-lg shadow-[0_0_15px_rgba(168,85,247,0.25)] shrink-0">
+                                <i class="fa-solid fa-broadcast-tower"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-sm font-black text-white">ExoLive V2</h3>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-900/40 text-purple-300 border border-purple-700/50">
+                                        <i class="fa-solid fa-code-branch text-[9px]"></i> <span id="drawer-exolive-branch">main</span>
+                                    </span>
+                                </div>
+                                <a id="drawer-exolive-repo-link" href="https://github.com/jassyel/exolive" target="_blank" class="text-[11px] text-purple-400 hover:text-purple-300 font-mono flex items-center gap-1 mt-0.5 underline-offset-2 hover:underline">
+                                    <span>github.com/jassyel/exolive</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <span id="drawer-exolive-status-pill" class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-gray-700 text-gray-400 bg-gray-800/40 shrink-0">
+                            Comprobando...
+                        </span>
+                    </div>
+
+                    <!-- Commit Actual (Instalado) -->
+                    <div class="bg-black/40 rounded-xl p-3 border border-white/5 space-y-1.5">
+                        <div class="flex items-center justify-between text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+                            <span class="flex items-center gap-1.5 text-purple-300 font-bold">
+                                <i class="fa-solid fa-circle-dot text-[8px] text-emerald-400"></i> Commit Instalado
+                            </span>
+                            <span id="drawer-exolive-current-time" class="text-gray-400">--</span>
+                        </div>
+                        <div class="flex items-start gap-2 pt-1">
+                            <span id="drawer-exolive-current-hash" class="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-cyan-300 border border-purple-500/30 shrink-0">#--</span>
+                            <p id="drawer-exolive-current-msg" class="text-xs text-gray-200 font-sans leading-tight">Cargando información del repositorio...</p>
+                        </div>
+                        <div class="text-[10px] text-gray-400 font-mono pt-1 border-t border-white/5 flex items-center justify-between">
+                            <span>Autor: <strong id="drawer-exolive-current-author" class="text-purple-300">--</strong></span>
+                            <span id="drawer-exolive-status-subtext" class="text-gray-400">Nodo HeavyNode</span>
+                        </div>
+                    </div>
+
+                    <!-- Commit Anterior -->
+                    <div class="bg-black/30 rounded-xl p-3 border border-white/5">
+                        <span class="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                            Commit Anterior
+                        </span>
+                        <div id="drawer-exolive-prev-commit" class="text-[11px] text-gray-400 font-mono truncate">
+                            --
+                        </div>
+                    </div>
+
+                    <!-- Historial de Cambios Recientes (Changelog) -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-gray-400 uppercase tracking-wider font-bold">
+                                <i class="fa-solid fa-list-check text-purple-400 mr-1"></i> Lista de Cambios Recientes
+                            </span>
+                            <span class="text-[10px] text-gray-400 font-mono">Últimos commits</span>
+                        </div>
+                        <div id="drawer-exolive-changelog" class="space-y-1.5 max-h-48 overflow-y-auto drawer-scroll pr-1">
+                            <div class="text-xs text-gray-400 p-2 text-center">Cargando historial de git...</div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Aplicar Cambios (Se atenúa si ya está al día) -->
+                    <div class="pt-2 border-t border-white/5">
+                        <button onclick="applyServiceUpdate('exolive', 'ExoLive V2')" id="drawer-btn-apply-exolive" disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all opacity-40 cursor-not-allowed bg-white/[0.03] text-gray-400 border border-white/10 shadow-none">
+                            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                            <span>Al día (Última versión)</span>
+                        </button>
+                        <p class="text-[10px] text-gray-400 text-center mt-1.5">
+                            Al aplicar cambios, se ejecuta git pull, npm run build y reinicio en caliente.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: PORTAFOLIO WEB -->
+                <div class="glass-panel p-4 sm:p-5 border border-cyan-500/30 bg-gradient-to-br from-[#0b1424] via-[#090d1c] to-[#080612] flex flex-col gap-4">
+                    <!-- Encabezado de la tarjeta Portafolio -->
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-lg shadow-[0_0_15px_rgba(0,255,255,0.25)] shrink-0">
+                                <i class="fa-solid fa-globe"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-sm font-black text-white">Portafolio Web</h3>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-700/50">
+                                        TheJazZDM Hub
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-gray-400 font-mono mt-0.5 block">
+                                    HeavyNode Node.js Container
+                                </span>
+                            </div>
+                        </div>
+                        <span id="drawer-portfolio-status-pill" class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-gray-700 text-gray-400 bg-gray-800/40 shrink-0">
+                            Al día
+                        </span>
+                    </div>
+
+                    <!-- Versión Instalada -->
+                    <div class="bg-black/40 rounded-xl p-3 border border-white/5 space-y-1.5">
+                        <div class="flex items-center justify-between text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+                            <span class="flex items-center gap-1.5 text-cyan-300 font-bold">
+                                <i class="fa-solid fa-circle-dot text-[8px] text-cyan-400"></i> Versión Activa
+                            </span>
+                            <span id="drawer-portfolio-current-time" class="text-gray-400">Activo</span>
+                        </div>
+                        <div class="flex items-start gap-2 pt-1">
+                            <span id="drawer-portfolio-current-hash" class="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">v16.2.0</span>
+                            <p id="drawer-portfolio-current-msg" class="text-xs text-gray-200 font-sans leading-tight">Arquitectura modular de alto rendimiento y telemetría de contenedor.</p>
+                        </div>
+                        <div class="text-[10px] text-gray-400 font-mono pt-1 border-t border-white/5 flex items-center justify-between">
+                            <span>Estado: <strong class="text-emerald-400">En Ejecución (Puerto 26293)</strong></span>
+                            <span>Sin errores</span>
+                        </div>
+                    </div>
+
+                    <!-- Historial del Portafolio -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-gray-400 uppercase tracking-wider font-bold">
+                                <i class="fa-solid fa-clock-rotate-left text-cyan-400 mr-1"></i> Registro de Versiones
+                            </span>
+                        </div>
+                        <div id="drawer-portfolio-changelog" class="space-y-1.5 max-h-36 overflow-y-auto drawer-scroll pr-1">
+                            <div class="flex items-start gap-2.5 p-2 rounded-lg bg-black/40 border border-white/5 text-xs">
+                                <span class="font-mono text-[10px] text-cyan-400 font-bold shrink-0 mt-0.5">v16.2.0</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-gray-200 text-xs truncate">Drawer lateral GitOps, telemetría HeavyNode y sincronización</div>
+                                    <div class="text-[10px] text-gray-400 mt-0.5">TheJazZDM • Hoy</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-2.5 p-2 rounded-lg bg-black/40 border border-white/5 text-xs">
+                                <span class="font-mono text-[10px] text-cyan-400 font-bold shrink-0 mt-0.5">v16.1.0</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-gray-200 text-xs truncate">Optimización de memoria de contenedor y terminal multi-consola</div>
+                                    <div class="text-[10px] text-gray-400 mt-0.5">TheJazZDM • Ayer</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción para Portafolio -->
+                    <div class="pt-2 border-t border-white/5 space-y-2">
+                        <!-- Botón principal (Atenuado si está al día) -->
+                        <button onclick="applyServiceUpdate('portfolio', 'Portafolio Web')" id="drawer-btn-apply-portfolio" disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all opacity-40 cursor-not-allowed bg-white/[0.03] text-gray-400 border border-white/10 shadow-none">
+                            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                            <span>Al día (Última versión)</span>
+                        </button>
+
+                        <!-- Botón secundario para forzar recarga en caliente -->
+                        <button onclick="applyServiceUpdate('portfolio', 'Portafolio Web', true)" class="w-full py-2 px-3 rounded-lg text-[11px] font-mono text-gray-300 hover:text-white bg-white/[0.03] hover:bg-cyan-500/10 border border-white/10 hover:border-cyan-500/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                            <i class="fa-solid fa-arrows-rotate text-[10px] text-cyan-400"></i>
+                            <span>Forzar recarga en caliente (Reiniciar Portafolio)</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Pie del Drawer -->
+            <div class="px-5 sm:px-6 py-3 border-t border-white/10 bg-[#070610] text-[11px] text-gray-400 flex items-center justify-between font-mono shrink-0">
+                <span>TheJazZDM Hub &amp; ExoTeam</span>
+                <button onclick="closeGitDrawer()" class="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer">
+                    Cerrar panel [Esc]
+                </button>
+            </div>
+        </aside>
+    </div>
+</body>
+</html>

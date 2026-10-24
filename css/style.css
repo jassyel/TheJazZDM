@@ -1,0 +1,17 @@
+html { scroll-behavior: smooth; }
+body { background-color: #07070B; color: #ffffff; overflow-x: hidden; }
+.bg-grid { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px); background-size: 60px 60px; -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 80%); mask-image: radial-gradient(circle at center, black 30%, transparent 80%); z-index: -1; pointer-events: none; }
+.glass-card { background: rgba(15, 15, 25, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1.5rem; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; overflow: hidden; }
+.glass-card:hover { transform: translateY(-8px) scale(1.01); border-color: rgba(0,255,255,0.2); box-shadow: 0 15px 35px -10px rgba(0,255,255,0.1), 0 0 20px rgba(255,0,127,0.05) inset; z-index: 10; }
+.card-pink-glow:hover { border-color: rgba(255,0,127,0.3); box-shadow: 0 15px 35px -10px rgba(255,0,127,0.15), 0 0 20px rgba(255,0,127,0.05) inset; }
+.card-cyan-glow:hover { border-color: rgba(0,255,255,0.3); box-shadow: 0 15px 35px -10px rgba(0,255,255,0.15), 0 0 20px rgba(0,255,255,0.05) inset; }
+.btn-neon { background: linear-gradient(45deg, transparent 5%, #FF007F 5%); color: #fff; box-shadow: 6px 0px 0px #00FFFF; transition: 0.3s; }
+.btn-neon:hover { background: linear-gradient(45deg, transparent 5%, #00FFFF 5%); box-shadow: -6px 0px 0px #FF007F; }
+.btn-neon-cyan { background: linear-gradient(45deg, transparent 5%, #00FFFF 5%); color: #07070B; box-shadow: 6px 0px 0px #FF007F; transition: 0.3s; }
+.btn-neon-cyan:hover { background: linear-gradient(45deg, transparent 5%, #FF007F 5%); color: #fff; box-shadow: -6px 0px 0px #00FFFF; }
+.text-gradient { background: linear-gradient(to right, #FF007F, #00FFFF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #0B0B13; } ::-webkit-scrollbar-thumb { background: #FF007F; border-radius: 4px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); opacity: 0; transition: all 0.3s; z-index: 50; } .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.wave-bar { transition: height 0.08s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease; box-shadow: 0 0 6px rgba(0, 255, 255, 0.4); }
+

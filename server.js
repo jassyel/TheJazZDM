@@ -1429,6 +1429,11 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
                         } else {
                             pendingCount = 1;
                         }
+                    } else {
+                        // Si localHash está vacío (ej. .git desincronizado o no inicializado),
+                        // DEBE requerir actualización para clonar/vincular el repo
+                        hasUpdate = true;
+                        pendingCount = changelog.length || 1;
                     }
                 }
             }
@@ -1451,12 +1456,12 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
                 repoUrl: defaultRepoUrl,
                 branch: 'main',
                 currentCommit: {
-                    hash: localHash || (changelog[0] ? changelog[0].hash : 'HEAD'),
-                    fullHash: localFull || (changelog[0] ? changelog[0].fullHash : ''),
-                    message: localMsg || (changelog[0] ? changelog[0].message : 'Sin mensaje'),
-                    author: localAuthor || (changelog[0] ? changelog[0].author : 'Jassyel'),
-                    date: localDate || (changelog[0] ? `${changelog[0].dateFormatted}, ${changelog[0].time}` : 'Reciente'),
-                    relative: localRel || (changelog[0] ? changelog[0].relative : '')
+                    hash: localHash || (hasUpdate ? 'Desincronizado' : (changelog[0] ? changelog[0].hash : 'HEAD')),
+                    fullHash: localFull || '',
+                    message: localMsg || (hasUpdate ? 'Código pendiente de sincronizar desde GitHub' : (changelog[0] ? changelog[0].message : 'Sin mensaje')),
+                    author: localAuthor || 'Jassyel',
+                    date: localDate || (localHash ? `${changelog[0]?.dateFormatted || 'Hoy'}` : 'Pendiente'),
+                    relative: localRel || ''
                 },
                 previousCommit,
                 changelog,

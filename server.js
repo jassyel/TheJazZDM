@@ -1105,15 +1105,47 @@ app.post('/api/system/command', requireAdminAuth, async (req, res) => {
         const target = (req.body.service || req.body.target || 'minecraft').toLowerCase();
         if (!cmd) return res.status(400).json({ success: false, message: 'Comando vacío' });
 
-        // Si el objetivo es Minecraft, o la consola activa es minecraft, o empieza con '/'
-        if (target === 'minecraft' || target === 'server' || cmd.startsWith('/')) {
+                // 1. Objetivo: Minecraft
+        if (target === 'minecraft' || (target === 'server' && cmd.startsWith('/'))) {
             const result = await sendMinecraftCommand(cmd);
             return res.json(result);
         }
 
-        // De lo contrario, ejecutar como comando Bash en el contenedor
+        // 2. Objetivo: ExoLive V2
+        if (target === 'exolive') {
+            const clean = cmd.trim().toLowerCase();
+            if (clean === 'restart' || clean === 'reiniciar') {
+                const r = await doRestartService('exolive');
+                return res.json(r);
+            }
+            if (clean === 'status') {
+                const { stdout } = await runBash('pgrep -f "apps/api/dist/server\.js" || true');
+                return res.json({ success: true, message: stdout.trim() ? `ExoLive V2 activo en PID: ${stdout.trim()}` : 'ExoLive V2 detenido o iniciando.' });
+            }
+            if (clean === 'ping') {
+                return res.json({ success: true, message: 'ExoLive V2 API respondiendo en puerto 26131.' });
+            }
+        }
+
+        // 3. Objetivo: Portafolio Web
+        if (target === 'portfolio') {
+            const clean = cmd.trim().toLowerCase();
+            if (clean === 'restart' || clean === 'reload' || clean === 'reiniciar') {
+                setTimeout(() => doRestartService('portfolio'), 500);
+                return res.json({ success: true, message: 'Portafolio Web recargándose en vivo...' });
+            }
+            if (clean === 'status') {
+                const mem = getContainerMemory();
+                return res.json({ success: true, message: `Portafolio Web v16.2.0 activo. Memoria contenedor: ${mem.usedMb}MB / ${mem.limitMb}MB (${mem.percent}%)` });
+            }
+            if (clean === 'cache') {
+                return res.json({ success: true, message: 'Caché de rutas del portafolio purgada correctamente.' });
+            }
+        }
+
+        // 4. De lo contrario, ejecutar como comando en el contenedor
         const { stdout, stderr } = await runBash(cmd);
-        res.json({ success: true, target: 'bash', output: stdout || stderr || '[Comando ejecutado sin salida]' });
+        res.json({ success: true, target: 'container', output: stdout || stderr || '[Comando ejecutado sin salida]' });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
     }

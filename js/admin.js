@@ -1054,15 +1054,27 @@ function selectConsole(service) {
         minecraft: 'Minecraft (Folia / Canvas)',
         velocity: 'Velocity Proxy',
         exolive: 'ExoLive V2',
-        portfolio: 'Portfolio Web'
+        portfolio: 'Portafolio Web'
     };
 
     const badge = document.getElementById('active-console-badge');
     if (badge) badge.innerText = names[service] || service;
 
+    const placeholders = {
+        minecraft: 'Comando Minecraft (ej: list, tps, time set day, save-all, op)...',
+        velocity: 'Comando Velocity Proxy (ej: glist, velocity reload, server, alert)...',
+        exolive: 'Comando o control de ExoLive V2 (ej: status, reload, ping, restart)...',
+        portfolio: 'Comando o control del Portafolio Web (ej: status, reload, cache)...'
+    };
+
+    const cmdInput = document.getElementById('cmd-input');
+    if (cmdInput) {
+        cmdInput.placeholder = placeholders[service] || `Comando para ${names[service] || service}...`;
+    }
+
     const chips = {
         minecraft: `
-            <span class="text-gray-500 font-sans">Comandos Minecraft:</span>
+            <span class="text-emerald-400 font-sans font-bold">Comandos Minecraft:</span>
             <button onclick="runQuickCmd('say ¡Hola a todos!')" class="px-2 py-0.5 rounded bg-[#00FFFF]/10 text-[#00FFFF] hover:bg-[#00FFFF]/20 transition-all">say</button>
             <button onclick="runQuickCmd('list')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-[#00FFFF]/20 hover:text-[#00FFFF] transition-all">list</button>
             <button onclick="runQuickCmd('tps')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-[#00FFFF]/20 hover:text-[#00FFFF] transition-all">tps</button>
@@ -1071,18 +1083,23 @@ function selectConsole(service) {
             <button onclick="runQuickCmd('save-all')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-[#00FFFF]/20 hover:text-[#00FFFF] transition-all">save-all</button>
         `,
         velocity: `
-            <span class="text-gray-500 font-sans">Comandos Velocity:</span>
+            <span class="text-amber-400 font-sans font-bold">Comandos Velocity:</span>
             <button onclick="runQuickCmd('glist')" class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all">glist</button>
             <button onclick="runQuickCmd('velocity reload')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-amber-500/20 hover:text-amber-400 transition-all">reload</button>
             <button onclick="runQuickCmd('server')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-amber-500/20 hover:text-amber-400 transition-all">server</button>
         `,
         exolive: `
-            <span class="text-gray-500 font-sans">ExoLive:</span>
-            <span class="text-purple-400 italic">Registros de webhooks, autenticación y sockets en tiempo real.</span>
+            <span class="text-purple-400 font-sans font-bold">Acciones ExoLive:</span>
+            <button onclick="runQuickCmd('status')" class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 transition-all">status</button>
+            <button onclick="runQuickCmd('ping')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-purple-500/20 hover:text-purple-300 transition-all">ping</button>
+            <button onclick="runQuickCmd('reload')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-purple-500/20 hover:text-purple-300 transition-all">reload</button>
+            <button onclick="runQuickCmd('restart')" class="px-2 py-0.5 rounded bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-all">reiniciar</button>
         `,
         portfolio: `
-            <span class="text-gray-500 font-sans">Portfolio:</span>
-            <span class="text-emerald-400 italic">Logs HTTP de Express, visitas registradas y estado del servidor web.</span>
+            <span class="text-cyan-400 font-sans font-bold">Acciones Portafolio:</span>
+            <button onclick="runQuickCmd('status')" class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-all">status</button>
+            <button onclick="runQuickCmd('reload')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-300 transition-all">reload</button>
+            <button onclick="runQuickCmd('cache')" class="px-2 py-0.5 rounded bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-300 transition-all">cache</button>
         `
     };
 
@@ -1094,7 +1111,9 @@ function selectConsole(service) {
     const promptLabel = document.getElementById('cmd-prompt-label');
     if (promptLabel) {
         const prompts = { minecraft: 'MC >', velocity: 'VEL >', exolive: 'EXO >', portfolio: 'WEB >' };
+        const colors = { minecraft: '#00FFFF', velocity: '#f59e0b', exolive: '#a855f7', portfolio: '#06b6d4' };
         promptLabel.innerText = prompts[service] || '>_';
+        promptLabel.style.color = colors[service] || '#00FFFF';
     }
 
     ['minecraft', 'velocity', 'exolive', 'portfolio'].forEach(c => {

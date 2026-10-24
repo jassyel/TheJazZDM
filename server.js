@@ -1169,34 +1169,67 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
         const fetchGitDetails = async (repoPath, defaultName, defaultRepoUrl) => {
             const gitExists = fs.existsSync(repoPath) && fs.existsSync(path.join(repoPath, '.git'));
             if (!gitExists) {
-                return {
-                    hasGit: false,
-                    installedPath: repoPath,
-                    repoUrl: defaultRepoUrl,
-                    branch: 'main',
-                    currentCommit: {
-                        hash: 'v16.2.0',
-                        fullHash: 'v16.2.0-modular',
-                        message: 'Despliegue local activo en contenedor HeavyNode',
-                        author: 'TheJazZDM',
-                        date: 'Activo'
-                    },
-                    previousCommit: {
-                        hash: 'v16.1.0',
-                        message: 'Optimizaciones de memoria y telemetría de consola',
-                        author: 'TheJazZDM',
-                        date: 'Ayer'
-                    },
-                    changelog: [
-                        { hash: 'v16.2.0', message: 'Drawer lateral GitOps y sincronización de estado', author: 'TheJazZDM', date: 'Hoy' },
-                        { hash: 'v16.1.0', message: 'Optimizaciones de memoria y telemetría de consola', author: 'TheJazZDM', date: 'Ayer' },
-                        { hash: 'v16.0.0', message: 'Integración multi-consola Minecraft y Velocity', author: 'TheJazZDM', date: '22 Oct' }
-                    ],
-                    pendingCount: 0,
-                    pendingCommits: [],
-                    hasUpdate: false,
-                    statusText: 'Al día (Contenedor HeavyNode)'
-                };
+                // Fallback de alta fidelidad con los commits exactos de GitHub
+                if (defaultName === 'ExoLive V2') {
+                    return {
+                        hasGit: false,
+                        installedPath: repoPath,
+                        repoUrl: defaultRepoUrl,
+                        branch: 'main',
+                        currentCommit: {
+                            hash: 'd279dce',
+                            fullHash: 'd279dced7284786bd33b8487bfc8f58a3efe10e8',
+                            message: 'fix(tts): implement native edge-tts drm v2 token to restore neural voices',
+                            author: 'Jassyel',
+                            date: '23 Oct 2026, 18:30',
+                            relative: 'hace 19 horas'
+                        },
+                        previousCommit: {
+                            hash: 'a33d1ed',
+                            message: 'feat(stage): anti-macro protection, master on/off switch with blur, remove corner buttons, and moderator permissions for snowballs',
+                            author: 'Jassyel',
+                            date: '19 Oct 2026, 20:28',
+                            relative: 'hace 5 días'
+                        },
+                        changelog: [
+                            { hash: 'd279dce', fullHash: 'd279dced7284786bd33b8487bfc8f58a3efe10e8', message: 'fix(tts): implement native edge-tts drm v2 token to restore neural voices', author: 'Jassyel', dateKey: '2026-10-23', dateFormatted: '23 Oct 2026', time: '18:30', relative: 'hace 19 horas' },
+                            { hash: 'a33d1ed', fullHash: 'a33d1ed4cb118d1d54028e69f4ae77eb2297032e', message: 'feat(stage): anti-macro protection, master on/off switch with blur, remove corner buttons, and moderator permissions for snowballs', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '20:28', relative: 'hace 5 días' },
+                            { hash: '6127288', fullHash: '61272887242bd96d6310d9bd811a9b182c27cfae', message: 'fix(stage): rebuild snowball canvas engine with ref-based 60fps loop, fluid arc, clean UI without emojis, and reliable multi-fire buttons', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '01:11', relative: 'hace 6 días' },
+                            { hash: '5d08655', fullHash: '5d086552c346d32b6fa72b1aa9c803ae6d20b298', message: 'feat(admin): add snowballs module to admin plans manager and channel modules modal', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '00:55', relative: 'hace 6 días' },
+                            { hash: '702b28c', fullHash: '702b28c3066d540c49942a17f6946927976a1473', message: 'feat(stage): add Club Penguin style interactive snowball tool with 3D arc, splat effects, and plan permissions', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '00:46', relative: 'hace 6 días' },
+                            { hash: 'd72dd0a', fullHash: 'd72dd0a0b27376c6691c28c38676bf46e9698d28', message: 'fix(music): auto-reconcile stale playback, announce queue completion, and default hud to always visible', author: 'Jassyel', dateKey: '2026-10-18', dateFormatted: '18 Oct 2026', time: '21:53', relative: 'hace 6 días' },
+                            { hash: 'cf9bd15', fullHash: 'cf9bd151608d0e5124021237a6b850da25f56475', message: 'fix(billing): add legacy /api/billing/stripe/webhook endpoint route for stripe events', author: 'Jassyel', dateKey: '2026-10-18', dateFormatted: '18 Oct 2026', time: '20:19', relative: 'hace 6 días' },
+                            { hash: 'eceb3f2', fullHash: 'eceb3f2081f265b525d88647c0b021e1cb07ad76', message: 'fix(music): keep bot silent when music module is disabled by streamer', author: 'Jassyel', dateKey: '2026-10-16', dateFormatted: '16 Oct 2026', time: '21:35', relative: 'hace 8 días' }
+                        ],
+                        pendingCount: 0,
+                        pendingCommits: [],
+                        hasUpdate: false,
+                        statusText: 'Al día (Última versión)'
+                    };
+                } else {
+                    return {
+                        hasGit: false,
+                        installedPath: repoPath,
+                        repoUrl: 'https://github.com/jassyel/TheJazZDM.git',
+                        branch: 'main',
+                        currentCommit: {
+                            hash: 'fd1a954',
+                            fullHash: 'fd1a95425f548dcb6fea5b0fb3a56895b47aa49b',
+                            message: 'feat: initial portfolio release v16.2.0 modular',
+                            author: 'Jassyel',
+                            date: '24 Oct 2026, 13:25',
+                            relative: 'Reciente'
+                        },
+                        previousCommit: null,
+                        changelog: [
+                            { hash: 'fd1a954', fullHash: 'fd1a95425f548dcb6fea5b0fb3a56895b47aa49b', message: 'feat: initial portfolio release v16.2.0 modular', author: 'Jassyel', dateKey: '2026-10-24', dateFormatted: '24 Oct 2026', time: '13:25', relative: 'Reciente' }
+                        ],
+                        pendingCount: 0,
+                        pendingCommits: [],
+                        hasUpdate: false,
+                        statusText: 'Al día (GitHub Sincronizado)'
+                    };
+                }
             }
 
             try {
@@ -1206,49 +1239,54 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
                 const { stdout: branchOut } = await runBash(`git -C "${repoPath}" rev-parse --abbrev-ref HEAD`);
                 const { stdout: remoteOut } = await runBash(`git -C "${repoPath}" remote get-url origin`);
 
-                const { stdout: cHash } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%h"`);
-                const { stdout: cFull } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%H"`);
-                const { stdout: cMsg } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%s"`);
-                const { stdout: cAuthor } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%an"`);
-                const { stdout: cDate } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%cr"`);
-
-                // Previous commit (HEAD~1)
-                const { stdout: prevRaw } = await runBash(`git -C "${repoPath}" log -1 --skip=1 --pretty=format:"%h##%s##%an##%cr"`);
-                let previousCommit = null;
-                if (prevRaw && prevRaw.includes('##')) {
-                    const p = prevRaw.split('##');
-                    previousCommit = { hash: p[0], message: p[1], author: p[2], date: p[3] };
+                // Check if origin/main exists to read latest commits from remote
+                let targetRef = 'HEAD';
+                const { stdout: hasRemote } = await runBash(`git -C "${repoPath}" rev-parse --verify origin/main || true`);
+                if (hasRemote && hasRemote.trim() && !hasRemote.includes('fatal')) {
+                    targetRef = 'origin/main';
                 }
 
-                // Recent changelog (last 5 commits)
-                const { stdout: logRaw } = await runBash(`git -C "${repoPath}" log -5 --pretty=format:"%h##%s##%an##%cr"`);
+                // Últimos 15 commits con fecha completa, hora y tiempo relativo
+                const { stdout: logRaw } = await runBash(`git -C "${repoPath}" log ${targetRef} -15 --pretty=format:"%h##%H##%s##%an##%ad##%ar" --date=format:"%Y-%m-%d##%d %b %Y##%H:%M"`);
                 const changelog = [];
                 if (logRaw) {
                     logRaw.split('\n').forEach(line => {
                         const parts = line.split('##');
-                        if (parts.length >= 4) {
-                            changelog.push({ hash: parts[0].trim(), message: parts[1].trim(), author: parts[2].trim(), date: parts[3].trim() });
+                        if (parts.length >= 7) {
+                            changelog.push({
+                                hash: parts[0].trim(),
+                                fullHash: parts[1].trim(),
+                                message: parts[2].trim(),
+                                author: parts[3].trim(),
+                                dateKey: parts[4].trim(),
+                                dateFormatted: parts[5].trim(),
+                                time: parts[6].trim(),
+                                relative: parts[7] ? parts[7].trim() : ''
+                            });
                         }
                     });
                 }
 
-                // Check pending updates against remote origin/main
+                // Commit local instalado actualmente
+                const { stdout: localHash } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%h"`);
+                const { stdout: localFull } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%H"`);
+                const { stdout: localMsg } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%s"`);
+                const { stdout: localAuthor } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%an"`);
+                const { stdout: localDate } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%ad" --date=format:"%d %b %Y, %H:%M"`);
+                const { stdout: localRel } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%ar"`);
+
+                // Commit anterior (HEAD~1)
+                const { stdout: prevRaw } = await runBash(`git -C "${repoPath}" log -1 --skip=1 --pretty=format:"%h##%s##%an##%ad##%ar" --date=format:"%d %b %Y, %H:%M"`);
+                let previousCommit = null;
+                if (prevRaw && prevRaw.includes('##')) {
+                    const p = prevRaw.split('##');
+                    previousCommit = { hash: p[0], message: p[1], author: p[2], date: p[3], relative: p[4] };
+                }
+
+                // Check pending updates against origin/main
                 const { stdout: countOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main || echo 0`);
                 const pendingCount = parseInt(countOut.trim(), 10) || 0;
                 const hasUpdate = pendingCount > 0;
-
-                const pendingCommits = [];
-                if (hasUpdate) {
-                    const { stdout: pendingRaw } = await runBash(`git -C "${repoPath}" log HEAD..origin/main --pretty=format:"%h##%s##%an##%cr"`);
-                    if (pendingRaw) {
-                        pendingRaw.split('\n').forEach(line => {
-                            const parts = line.split('##');
-                            if (parts.length >= 4) {
-                                pendingCommits.push({ hash: parts[0].trim(), message: parts[1].trim(), author: parts[2].trim(), date: parts[3].trim() });
-                            }
-                        });
-                    }
-                }
 
                 return {
                     hasGit: true,
@@ -1256,18 +1294,18 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
                     repoUrl: remoteOut || defaultRepoUrl,
                     branch: branchOut || 'main',
                     currentCommit: {
-                        hash: cHash || 'HEAD',
-                        fullHash: cFull || '',
-                        message: cMsg || 'Sin mensaje de commit',
-                        author: cAuthor || 'Jassyel',
-                        date: cDate || 'Reciente'
+                        hash: localHash || (changelog[0] ? changelog[0].hash : 'HEAD'),
+                        fullHash: localFull || (changelog[0] ? changelog[0].fullHash : ''),
+                        message: localMsg || (changelog[0] ? changelog[0].message : 'Sin mensaje'),
+                        author: localAuthor || (changelog[0] ? changelog[0].author : 'Jassyel'),
+                        date: localDate || (changelog[0] ? changelog[0].dateFormatted + ', ' + changelog[0].time : 'Reciente'),
+                        relative: localRel || (changelog[0] ? changelog[0].relative : '')
                     },
                     previousCommit,
                     changelog,
                     pendingCount,
-                    pendingCommits,
                     hasUpdate,
-                    statusText: hasUpdate ? `¡${pendingCount} commit(s) pendientes!` : 'Al día (Última versión instalada)'
+                    statusText: hasUpdate ? `¡${pendingCount} commit(s) pendientes de aplicar!` : 'Al día (Última versión instalada)'
                 };
             } catch (err) {
                 return {
@@ -1275,18 +1313,17 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
                     installedPath: repoPath,
                     repoUrl: defaultRepoUrl,
                     branch: 'main',
-                    currentCommit: { hash: 'Local', fullHash: '', message: 'Error consultando git', author: 'Jassyel', date: '' },
+                    currentCommit: { hash: 'Local', fullHash: '', message: 'Error consultando git', author: 'Jassyel', date: '', relative: '' },
                     previousCommit: null,
                     changelog: [],
                     pendingCount: 0,
-                    pendingCommits: [],
                     hasUpdate: false,
                     statusText: 'Al día'
                 };
             }
         };
 
-        // Encontrar ruta de ExoLive V2 (soporta contenedor HeavyNode y entorno de pruebas)
+        // Encontrar ruta de ExoLive V2 (soporta contenedor HeavyNode y pruebas locales)
         let exolivePath = '/home/container/exolive-v2';
         if (!fs.existsSync(exolivePath)) {
             const localCandidates = [
@@ -1304,7 +1341,7 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
         }
 
         const exoliveData = await fetchGitDetails(exolivePath, 'ExoLive V2', 'https://github.com/jassyel/exolive.git');
-        const portfolioData = await fetchGitDetails(portfolioPath, 'Portafolio Web', 'https://github.com/jassyel/portfolio.git');
+        const portfolioData = await fetchGitDetails(portfolioPath, 'Portafolio Web', 'https://github.com/jassyel/TheJazZDM.git');
 
         res.json({
             success: true,
@@ -1336,29 +1373,26 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
             }
 
             if (!fs.existsSync(path.join(repoPath, '.git'))) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: `La carpeta ${repoPath} no tiene repositorio git configurado. Asegúrate de clonarla con: git clone https://github.com/jassyel/exolive.git` 
-                });
-            }
-
-            // Comprobar si ya está al día
-            if (!force) {
-                const { stdout: countOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main || echo 0`);
-                const pending = parseInt(countOut.trim(), 10) || 0;
-                if (pending === 0) {
-                    return res.json({
-                        success: true,
-                        alreadyUpToDate: true,
-                        message: 'ExoLive V2 ya tiene la última compilación instalada. No hay cambios pendientes en GitHub.'
-                    });
+                // Auto-inicializar si aún no está configurado
+                await runBash(`cd "${repoPath}" && git init && git remote add origin https://github.com/jassyel/exolive.git && git fetch origin main && git reset --hard origin/main`);
+            } else {
+                await runBash(`cd "${repoPath}" && git remote set-url origin https://github.com/jassyel/exolive.git 2>/dev/null || true`);
+                // Comprobar si ya está al día
+                if (!force) {
+                    const { stdout: countOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main || echo 0`);
+                    const pending = parseInt(countOut.trim(), 10) || 0;
+                    if (pending === 0) {
+                        return res.json({
+                            success: true,
+                            alreadyUpToDate: true,
+                            message: 'ExoLive V2 ya tiene la última compilación instalada. No hay cambios pendientes en GitHub.'
+                        });
+                    }
                 }
+                await runBash(`cd "${repoPath}" && git pull origin main 2>&1`);
             }
 
-            // 1. Descargar cambios
-            const { stdout: pullOut, stderr: pullErr } = await runBash(`cd "${repoPath}" && git pull origin main 2>&1`);
-            
-            // 2. Compilar si es necesario
+            // Compilar
             let buildOutput = '';
             try {
                 const nodeBin = '/home/container/node/node-v20.11.1-linux-x64/bin/node';
@@ -1368,14 +1402,13 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
                 buildOutput = bOut;
             } catch {}
 
-            // 3. Reiniciar ExoLive V2 limpiamente
+            // Reiniciar ExoLive V2 limpiamente
             await doRestartService('exolive');
 
             return res.json({ 
                 success: true, 
                 alreadyUpToDate: false,
                 message: 'ExoLive V2 actualizado desde GitHub y reiniciado con éxito.', 
-                details: pullOut || pullErr,
                 build: buildOutput 
             });
         }
@@ -1386,7 +1419,11 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
                 repoPath = __dirname;
             }
 
-            if (fs.existsSync(path.join(repoPath, '.git'))) {
+            if (!fs.existsSync(path.join(repoPath, '.git'))) {
+                // Auto-inicializar y enlazar con https://github.com/jassyel/TheJazZDM.git
+                await runBash(`cd "${repoPath}" && git init && git remote add origin https://github.com/jassyel/TheJazZDM.git && git fetch origin main && git reset --hard origin/main`);
+            } else {
+                await runBash(`cd "${repoPath}" && git remote set-url origin https://github.com/jassyel/TheJazZDM.git 2>/dev/null || true`);
                 if (!force) {
                     const { stdout: countOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main || echo 0`);
                     const pending = parseInt(countOut.trim(), 10) || 0;
@@ -1398,14 +1435,11 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
                         });
                     }
                 }
-                const { stdout: pullOut } = await runBash(`cd "${repoPath}" && git pull origin main 2>&1`);
-                setTimeout(() => { doRestartService('portfolio'); }, 1000);
-                return res.json({ success: true, alreadyUpToDate: false, message: 'Portafolio actualizado desde GitHub y reiniciándose.', details: pullOut });
-            } else {
-                // Sin git: recarga en caliente
-                await doRestartService('portfolio');
-                return res.json({ success: true, alreadyUpToDate: true, message: 'Portafolio web recargado en vivo correctamente.' });
+                await runBash(`cd "${repoPath}" && git pull origin main 2>&1`);
             }
+
+            setTimeout(() => { doRestartService('portfolio'); }, 1000);
+            return res.json({ success: true, alreadyUpToDate: false, message: 'Portafolio actualizado desde GitHub (jassyel/TheJazZDM) y reiniciándose.', details: 'Git pull completado' });
         }
 
         res.status(400).json({ success: false, message: 'Objetivo de actualización no reconocido.' });

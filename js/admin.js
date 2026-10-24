@@ -1757,31 +1757,63 @@ function renderGitHubUpdates(u) {
         if (curHash) curHash.innerText = exo.currentCommit?.hash ? '#' + exo.currentCommit.hash : '#HEAD';
         if (curMsg) curMsg.innerText = exo.currentCommit?.message || 'Sin mensaje de commit';
         if (curAuthor) curAuthor.innerText = exo.currentCommit?.author || 'Jassyel';
-        if (curTime) curTime.innerText = exo.currentCommit?.date || 'Reciente';
+        if (curTime) curTime.innerText = exo.currentCommit?.date ? `${exo.currentCommit.date} (${exo.currentCommit.relative || ''})` : 'Reciente';
 
         if (prevEl) {
             if (exo.previousCommit) {
-                prevEl.innerHTML = `<span class="text-cyan-300 font-bold">#${exo.previousCommit.hash}</span> - ${exo.previousCommit.message} <span class="text-gray-400">(${exo.previousCommit.date || ''})</span>`;
+                prevEl.innerHTML = `<span class="text-cyan-300 font-bold">#${exo.previousCommit.hash}</span> - ${exo.previousCommit.message} <span class="text-gray-400">(${exo.previousCommit.date || ''} - ${exo.previousCommit.relative || ''})</span>`;
             } else {
                 prevEl.innerHTML = '<span class="text-gray-500">No hay commit anterior registrado</span>';
             }
         }
 
+        // Render Changelog grouped by date (Identico a GitHub)
         if (changelogEl) {
             if (exo.changelog && exo.changelog.length > 0) {
-                changelogEl.innerHTML = exo.changelog.map(c => `
-                    <div class="flex items-start gap-2.5 p-2 rounded-lg bg-black/40 border border-white/5 hover:border-purple-500/30 transition-all text-xs">
-                        <span class="font-mono text-[10px] text-cyan-300 font-bold shrink-0 mt-0.5">#${c.hash}</span>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-gray-200 text-xs truncate" title="${c.message}">${c.message}</div>
-                            <div class="text-[10px] text-gray-400 flex items-center gap-2 mt-0.5 font-mono">
-                                <span class="text-purple-300">${c.author}</span> &bull; <span>${c.date}</span>
-                            </div>
+                const groups = {};
+                exo.changelog.forEach(c => {
+                    const dateLabel = c.dateFormatted || c.dateKey || 'Recientes';
+                    if (!groups[dateLabel]) groups[dateLabel] = [];
+                    groups[dateLabel].push(c);
+                });
+
+                let html = '';
+                for (const [dateLabel, items] of Object.entries(groups)) {
+                    html += `
+                        <div class="pt-3 pb-1 flex items-center gap-2">
+                            <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/30 flex items-center gap-1.5">
+                                <i class="fa-regular fa-calendar text-[9px]"></i> Commits del ${dateLabel}
+                            </span>
+                            <div class="h-[1px] flex-1 bg-white/10"></div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                    items.forEach(c => {
+                        const commitUrl = `https://github.com/jassyel/exolive/commit/${c.fullHash || c.hash}`;
+                        html += `
+                            <div class="group flex items-start justify-between gap-3 p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-purple-500/40 hover:bg-purple-950/20 transition-all text-xs">
+                                <div class="flex-1 min-w-0">
+                                    <a href="${commitUrl}" target="_blank" class="text-gray-200 font-semibold text-xs leading-snug hover:text-purple-300 transition-colors block" title="${c.message}">
+                                        ${c.message}
+                                    </a>
+                                    <div class="text-[10px] text-gray-400 flex items-center gap-2 mt-1 font-mono flex-wrap">
+                                        <span class="text-purple-300 font-bold">${c.author}</span>
+                                        <span class="text-gray-600">&bull;</span>
+                                        <span>${c.time || ''}</span>
+                                        <span class="text-gray-600">&bull;</span>
+                                        <span class="text-gray-400">${c.relative || ''}</span>
+                                    </div>
+                                </div>
+                                <a href="${commitUrl}" target="_blank" class="font-mono text-[11px] font-bold px-2 py-1 rounded bg-[#0b0817] border border-purple-500/30 text-cyan-300 group-hover:border-cyan-400 group-hover:text-white transition-all flex items-center gap-1 shrink-0" title="Ver commit en GitHub">
+                                    <span>#${c.hash}</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px] text-purple-400"></i>
+                                </a>
+                            </div>
+                        `;
+                    });
+                }
+                changelogEl.innerHTML = html;
             } else {
-                changelogEl.innerHTML = '<div class="text-xs text-gray-400 p-2 text-center">No hay historial disponible</div>';
+                changelogEl.innerHTML = '<div class="text-xs text-gray-400 p-3 text-center bg-black/20 rounded-xl border border-white/5">No hay historial disponible</div>';
             }
         }
 
@@ -1817,11 +1849,12 @@ function renderGitHubUpdates(u) {
         const curHash = document.getElementById('drawer-portfolio-current-hash');
         const curMsg = document.getElementById('drawer-portfolio-current-msg');
         const curTime = document.getElementById('drawer-portfolio-current-time');
+        const changelogEl = document.getElementById('drawer-portfolio-changelog');
         const applyBtn = document.getElementById('drawer-btn-apply-portfolio');
 
-        if (curHash && port.currentCommit?.hash) curHash.innerText = port.currentCommit.hash;
+        if (curHash && port.currentCommit?.hash) curHash.innerText = '#' + port.currentCommit.hash;
         if (curMsg && port.currentCommit?.message) curMsg.innerText = port.currentCommit.message;
-        if (curTime && port.currentCommit?.date) curTime.innerText = port.currentCommit.date;
+        if (curTime && port.currentCommit?.date) curTime.innerText = `${port.currentCommit.date} (${port.currentCommit.relative || 'Activo'})`;
 
         if (statusPill) {
             if (port.hasUpdate) {
@@ -1831,6 +1864,34 @@ function renderGitHubUpdates(u) {
                 statusPill.className = 'text-[10px] font-bold px-2.5 py-1 rounded-full border border-gray-700 text-gray-400 bg-gray-800/40 shrink-0';
                 statusPill.innerText = 'Al día';
             }
+        }
+
+        if (changelogEl && port.changelog && port.changelog.length > 0) {
+            let html = '';
+            port.changelog.forEach(c => {
+                const commitUrl = `https://github.com/jassyel/TheJazZDM/commit/${c.fullHash || c.hash}`;
+                html += `
+                    <div class="group flex items-start justify-between gap-3 p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/40 hover:bg-cyan-950/20 transition-all text-xs">
+                        <div class="flex-1 min-w-0">
+                            <a href="${commitUrl}" target="_blank" class="text-gray-200 font-semibold text-xs leading-snug hover:text-cyan-300 transition-colors block" title="${c.message}">
+                                ${c.message}
+                            </a>
+                            <div class="text-[10px] text-gray-400 flex items-center gap-2 mt-1 font-mono flex-wrap">
+                                <span class="text-cyan-300 font-bold">${c.author}</span>
+                                <span class="text-gray-600">&bull;</span>
+                                <span>${c.dateFormatted || ''}</span>
+                                <span class="text-gray-600">&bull;</span>
+                                <span class="text-gray-400">${c.relative || ''}</span>
+                            </div>
+                        </div>
+                        <a href="${commitUrl}" target="_blank" class="font-mono text-[11px] font-bold px-2 py-1 rounded bg-[#070b14] border border-cyan-500/30 text-cyan-300 group-hover:border-cyan-400 group-hover:text-white transition-all flex items-center gap-1 shrink-0" title="Ver commit en GitHub">
+                            <span>#${c.hash}</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[8px] text-cyan-400"></i>
+                        </a>
+                    </div>
+                `;
+            });
+            changelogEl.innerHTML = html;
         }
 
         if (applyBtn) {
@@ -1851,7 +1912,6 @@ async function applyServiceUpdate(target, serviceName, force = false) {
     if (!currentPass) return;
 
     if (!force) {
-        // Validar si el botón está desactivado
         const btn = target === 'exolive' 
             ? document.getElementById('drawer-btn-apply-exolive') 
             : document.getElementById('drawer-btn-apply-portfolio');

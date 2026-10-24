@@ -1693,6 +1693,39 @@ function closeGitDrawer() {
     }, 320);
 }
 
+function toggleTokenConfigModal() {
+    const modal = document.getElementById('drawer-token-modal');
+    if (modal) modal.classList.toggle('hidden');
+}
+
+async function saveGitHubToken() {
+    if (!currentPass) return;
+    const input = document.getElementById('drawer-token-input');
+    if (!input || !input.value.trim()) {
+        showToast('Token Requerido', 'Introduce un Personal Access Token válido de GitHub.', 'warning');
+        return;
+    }
+    showToast('Verificando Token', 'Comprobando acceso con GitHub...', 'info');
+    try {
+        const res = await fetch('/api/updates/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: currentPass, token: input.value.trim() })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Token Guardado', data.message, 'success');
+            input.value = '';
+            toggleTokenConfigModal();
+            checkGitHubUpdates(true);
+        } else {
+            showToast('Error de Token', data.message || 'No se pudo verificar el token.', 'error');
+        }
+    } catch (e) {
+        showToast('Error', 'Fallo al comunicarse con el servidor.', 'error');
+    }
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const drawer = document.getElementById('git-drawer');
@@ -1739,6 +1772,17 @@ async function checkGitHubUpdates(manual = false) {
 
 function renderGitHubUpdates(u) {
     const hasAnyUpdate = Boolean((u.exolive && u.exolive.hasUpdate) || (u.portfolio && u.portfolio.hasUpdate));
+
+    // Estado del Token de GitHub PAT
+    const tokenStatus = document.getElementById('drawer-token-status');
+    if (tokenStatus) {
+        const isConnected = u.exolive?.tokenConfigured || u.portfolio?.tokenConfigured;
+        if (isConnected) {
+            tokenStatus.innerHTML = 'GitHub PAT: <strong class="text-emerald-400">Conectado (Acceso Privado Activo)</strong>';
+        } else {
+            tokenStatus.innerHTML = 'GitHub PAT: <strong class="text-amber-400">No Configurado</strong>';
+        }
+    }
 
     // Indicador en Navbar (Desktop y Móvil)
     const navBadge = document.getElementById('nav-git-badge');

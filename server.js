@@ -1195,167 +1195,276 @@ app.post('/api/system/scheduler', requireAdminAuth, (req, res) => {
 // GITHUB GITOPS Y DESPLIEGUE CONTINUO (EXOLIVE V2 & PORTFOLIO)
 // ══════════════════════════════════════════════════════
 
+// Obtener token de GitHub para repositorios privados (ExoLive V2)
+function getGitHubToken() {
+    try {
+        if (process.env.GITHUB_TOKEN && process.env.GITHUB_TOKEN.trim()) {
+            return process.env.GITHUB_TOKEN.trim();
+        }
+        const localTokenFile = path.join(__dirname, '.github_token');
+        if (fs.existsSync(localTokenFile)) {
+            const t = fs.readFileSync(localTokenFile, 'utf8').trim();
+            if (t) return t;
+        }
+        const containerTokenFile = '/home/container/.github_token';
+        if (fs.existsSync(containerTokenFile)) {
+            const t = fs.readFileSync(containerTokenFile, 'utf8').trim();
+            if (t) return t;
+        }
+        if (fs.existsSync(DB_PATH)) {
+            const cfg = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+            if (cfg.github_token && cfg.github_token.trim()) return cfg.github_token.trim();
+            if (cfg.githubToken && cfg.githubToken.trim()) return cfg.githubToken.trim();
+        }
+        const secFile = '/home/container/secrets.sh';
+        if (fs.existsSync(secFile)) {
+            const content = fs.readFileSync(secFile, 'utf8');
+            const m = content.match(/GITHUB_TOKEN=["']?([^"'\r\n]+)["']?/);
+            if (m) return m[1].trim();
+        }
+    } catch {}
+    return '';
+}
+
+function formatCommitDate(isoString) {
+    if (!isoString) return { dateKey: '', dateFormatted: 'Reciente', time: '', relative: '' };
+    try {
+        const d = new Date(isoString);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateKey = `${yyyy}-${mm}-${dd}`;
+        
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const dateFormatted = `${d.getDate()} ${months[d.getMonth()]} ${yyyy}`;
+        const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        
+        const now = Date.now();
+        const diffSec = Math.floor((now - d.getTime()) / 1000);
+        let relative = 'hace unos momentos';
+        if (diffSec < 60) {
+            relative = 'hace unos segundos';
+        } else if (diffSec < 3600) {
+            const mins = Math.floor(diffSec / 60);
+            relative = `hace ${mins} ${mins === 1 ? 'minuto' : 'minutos'}`;
+        } else if (diffSec < 86400) {
+            const hrs = Math.floor(diffSec / 3600);
+            relative = `hace ${hrs} ${hrs === 1 ? 'hora' : 'horas'}`;
+        } else if (diffSec < 172800) {
+            relative = 'ayer';
+        } else {
+            const days = Math.floor(diffSec / 86400);
+            relative = `hace ${days} días`;
+        }
+        return { dateKey, dateFormatted, time, relative };
+    } catch {
+        return { dateKey: '', dateFormatted: 'Reciente', time: '', relative: '' };
+    }
+}
+
+function fetchGitHubCommitsAPI(repoOwner, repoName, token, count = 15) {
+    return new Promise((resolve) => {
+        const headers = {
+            'User-Agent': 'TheJazZDM-Portfolio/16.2.0',
+            'Accept': 'application/vnd.github.v3+json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const req = https.request({
+            hostname: 'api.github.com',
+            port: 443,
+            path: `/repos/${repoOwner}/${repoName}/commits?sha=main&per_page=${count}`,
+            method: 'GET',
+            headers,
+            timeout: 6000
+        }, (res) => {
+            let data = '';
+            res.on('data', chunk => { data += chunk; });
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    try {
+                        const json = JSON.parse(data);
+                        resolve({ success: true, commits: json });
+                    } catch (e) {
+                        resolve({ success: false, error: e.message });
+                    }
+                } else {
+                    resolve({ success: false, statusCode: res.statusCode, error: data });
+                }
+            });
+        });
+        req.on('error', err => resolve({ success: false, error: err.message }));
+        req.on('timeout', () => { req.destroy(); resolve({ success: false, error: 'Timeout' }); });
+        req.end();
+    });
+}
+
 // 1. Comprobar actualizaciones detalladas en GitHub (ExoLive V2 y Portafolio)
 app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
     try {
         const fetchGitDetails = async (repoPath, defaultName, defaultRepoUrl) => {
+            const isExoLive = defaultName === 'ExoLive V2' || repoPath.includes('exolive');
+            const repoOwner = 'jassyel';
+            const repoName = isExoLive ? 'exolive' : 'TheJazZDM';
+            const token = getGitHubToken();
+            const authedUrl = (isExoLive && token) 
+                ? `https://${token}@github.com/${repoOwner}/${repoName}.git` 
+                : defaultRepoUrl;
+
             const gitExists = fs.existsSync(repoPath) && fs.existsSync(path.join(repoPath, '.git'));
-            if (!gitExists) {
-                // Fallback de alta fidelidad con los commits exactos de GitHub
-                if (defaultName === 'ExoLive V2') {
-                    return {
-                        hasGit: false,
-                        installedPath: repoPath,
-                        repoUrl: defaultRepoUrl,
-                        branch: 'main',
-                        currentCommit: {
-                            hash: 'd279dce',
-                            fullHash: 'd279dced7284786bd33b8487bfc8f58a3efe10e8',
-                            message: 'fix(tts): implement native edge-tts drm v2 token to restore neural voices',
-                            author: 'Jassyel',
-                            date: '23 Oct 2026, 18:30',
-                            relative: 'hace 19 horas'
-                        },
-                        previousCommit: {
-                            hash: 'a33d1ed',
-                            message: 'feat(stage): anti-macro protection, master on/off switch with blur, remove corner buttons, and moderator permissions for snowballs',
-                            author: 'Jassyel',
-                            date: '19 Oct 2026, 20:28',
-                            relative: 'hace 5 días'
-                        },
-                        changelog: [
-                            { hash: 'd279dce', fullHash: 'd279dced7284786bd33b8487bfc8f58a3efe10e8', message: 'fix(tts): implement native edge-tts drm v2 token to restore neural voices', author: 'Jassyel', dateKey: '2026-10-23', dateFormatted: '23 Oct 2026', time: '18:30', relative: 'hace 19 horas' },
-                            { hash: 'a33d1ed', fullHash: 'a33d1ed4cb118d1d54028e69f4ae77eb2297032e', message: 'feat(stage): anti-macro protection, master on/off switch with blur, remove corner buttons, and moderator permissions for snowballs', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '20:28', relative: 'hace 5 días' },
-                            { hash: '6127288', fullHash: '61272887242bd96d6310d9bd811a9b182c27cfae', message: 'fix(stage): rebuild snowball canvas engine with ref-based 60fps loop, fluid arc, clean UI without emojis, and reliable multi-fire buttons', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '01:11', relative: 'hace 6 días' },
-                            { hash: '5d08655', fullHash: '5d086552c346d32b6fa72b1aa9c803ae6d20b298', message: 'feat(admin): add snowballs module to admin plans manager and channel modules modal', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '00:55', relative: 'hace 6 días' },
-                            { hash: '702b28c', fullHash: '702b28c3066d540c49942a17f6946927976a1473', message: 'feat(stage): add Club Penguin style interactive snowball tool with 3D arc, splat effects, and plan permissions', author: 'Jassyel', dateKey: '2026-10-19', dateFormatted: '19 Oct 2026', time: '00:46', relative: 'hace 6 días' },
-                            { hash: 'd72dd0a', fullHash: 'd72dd0a0b27376c6691c28c38676bf46e9698d28', message: 'fix(music): auto-reconcile stale playback, announce queue completion, and default hud to always visible', author: 'Jassyel', dateKey: '2026-10-18', dateFormatted: '18 Oct 2026', time: '21:53', relative: 'hace 6 días' },
-                            { hash: 'cf9bd15', fullHash: 'cf9bd151608d0e5124021237a6b850da25f56475', message: 'fix(billing): add legacy /api/billing/stripe/webhook endpoint route for stripe events', author: 'Jassyel', dateKey: '2026-10-18', dateFormatted: '18 Oct 2026', time: '20:19', relative: 'hace 6 días' },
-                            { hash: 'eceb3f2', fullHash: 'eceb3f2081f265b525d88647c0b021e1cb07ad76', message: 'fix(music): keep bot silent when music module is disabled by streamer', author: 'Jassyel', dateKey: '2026-10-16', dateFormatted: '16 Oct 2026', time: '21:35', relative: 'hace 8 días' }
-                        ],
-                        pendingCount: 0,
-                        pendingCommits: [],
-                        hasUpdate: false,
-                        statusText: 'Al día (Última versión)'
-                    };
-                } else {
-                    return {
-                        hasGit: false,
-                        installedPath: repoPath,
-                        repoUrl: 'https://github.com/jassyel/TheJazZDM.git',
-                        branch: 'main',
-                        currentCommit: {
-                            hash: 'fd1a954',
-                            fullHash: 'fd1a95425f548dcb6fea5b0fb3a56895b47aa49b',
-                            message: 'feat: initial portfolio release v16.2.0 modular',
-                            author: 'Jassyel',
-                            date: '24 Oct 2026, 13:25',
-                            relative: 'Reciente'
-                        },
-                        previousCommit: null,
-                        changelog: [
-                            { hash: 'fd1a954', fullHash: 'fd1a95425f548dcb6fea5b0fb3a56895b47aa49b', message: 'feat: initial portfolio release v16.2.0 modular', author: 'Jassyel', dateKey: '2026-10-24', dateFormatted: '24 Oct 2026', time: '13:25', relative: 'Reciente' }
-                        ],
-                        pendingCount: 0,
-                        pendingCommits: [],
-                        hasUpdate: false,
-                        statusText: 'Al día (GitHub Sincronizado)'
-                    };
-                }
+
+            // 1. Obtener commit local actualmente instalado
+            let localHash = '', localFull = '', localMsg = '', localAuthor = 'Jassyel', localDate = '', localRel = '';
+            let previousCommit = null;
+
+            if (gitExists) {
+                try {
+                    const { stdout: locLog } = await runBash(`git -C "${repoPath}" log -2 --pretty=format:"%h##%H##%s##%an##%ad##%ar" --date=format:"%d %b %Y, %H:%M" 2>/dev/null || true`);
+                    if (locLog) {
+                        const lines = locLog.split('\n').map(l => l.trim()).filter(Boolean);
+                        if (lines[0]) {
+                            const p = lines[0].split('##');
+                            localHash = p[0]; localFull = p[1]; localMsg = p[2]; localAuthor = p[3]; localDate = p[4]; localRel = p[5];
+                        }
+                        if (lines[1]) {
+                            const p = lines[1].split('##');
+                            previousCommit = { hash: p[0], fullHash: p[1], message: p[2], author: p[3], date: p[4], relative: p[5] };
+                        }
+                    }
+                    // Sincronizar remote URL con token y hacer fetch silencioso en segundo plano
+                    await runBash(`git -C "${repoPath}" remote set-url origin "${authedUrl}" 2>/dev/null || true`);
+                    await runBash(`git -C "${repoPath}" fetch origin main 2>&1 || true`);
+                } catch {}
             }
+
+            // 2. Consultar historial de commits remotos (vía GitHub API en tiempo real)
+            let changelog = [];
+            let apiSuccess = false;
 
             try {
-                // Fetch silencioso desde GitHub
-                await runBash(`git -C "${repoPath}" fetch origin main --quiet || true`);
-
-                const { stdout: branchOut } = await runBash(`git -C "${repoPath}" rev-parse --abbrev-ref HEAD`);
-                const { stdout: remoteOut } = await runBash(`git -C "${repoPath}" remote get-url origin`);
-
-                // Check if origin/main exists to read latest commits from remote
-                let targetRef = 'HEAD';
-                const { stdout: hasRemote } = await runBash(`git -C "${repoPath}" rev-parse --verify origin/main || true`);
-                if (hasRemote && hasRemote.trim() && !hasRemote.includes('fatal')) {
-                    targetRef = 'origin/main';
-                }
-
-                // Últimos 15 commits con fecha completa, hora y tiempo relativo
-                const { stdout: logRaw } = await runBash(`git -C "${repoPath}" log ${targetRef} -15 --pretty=format:"%h##%H##%s##%an##%ad##%ar" --date=format:"%Y-%m-%d##%d %b %Y##%H:%M"`);
-                const changelog = [];
-                if (logRaw) {
-                    logRaw.split('\n').forEach(line => {
-                        const parts = line.split('##');
-                        if (parts.length >= 7) {
-                            changelog.push({
-                                hash: parts[0].trim(),
-                                fullHash: parts[1].trim(),
-                                message: parts[2].trim(),
-                                author: parts[3].trim(),
-                                dateKey: parts[4].trim(),
-                                dateFormatted: parts[5].trim(),
-                                time: parts[6].trim(),
-                                relative: parts[7] ? parts[7].trim() : ''
-                            });
-                        }
+                const apiRes = await fetchGitHubCommitsAPI(repoOwner, repoName, token, 15);
+                if (apiRes.success && Array.isArray(apiRes.commits) && apiRes.commits.length > 0) {
+                    apiSuccess = true;
+                    changelog = apiRes.commits.map(c => {
+                        const df = formatCommitDate(c.commit?.author?.date);
+                        return {
+                            hash: c.sha.substring(0, 7),
+                            fullHash: c.sha,
+                            message: (c.commit?.message || '').split('\n')[0].trim(),
+                            author: c.commit?.author?.name || c.author?.login || 'Jassyel',
+                            dateKey: df.dateKey,
+                            dateFormatted: df.dateFormatted,
+                            time: df.time,
+                            relative: df.relative
+                        };
                     });
                 }
+            } catch {}
 
-                // Commit local instalado actualmente
-                const { stdout: localHash } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%h"`);
-                const { stdout: localFull } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%H"`);
-                const { stdout: localMsg } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%s"`);
-                const { stdout: localAuthor } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%an"`);
-                const { stdout: localDate } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%ad" --date=format:"%d %b %Y, %H:%M"`);
-                const { stdout: localRel } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%ar"`);
+            // Fallback con git log local si GitHub API no respondió
+            if (!apiSuccess && gitExists) {
+                try {
+                    let targetRef = 'HEAD';
+                    const { stdout: hasRemote } = await runBash(`git -C "${repoPath}" rev-parse --verify origin/main 2>/dev/null || true`);
+                    if (hasRemote && hasRemote.trim() && !hasRemote.includes('fatal')) targetRef = 'origin/main';
+                    const { stdout: logRaw } = await runBash(`git -C "${repoPath}" log ${targetRef} -15 --pretty=format:"%h##%H##%s##%an##%ad##%ar" --date=format:"%Y-%m-%d##%d %b %Y##%H:%M" 2>/dev/null || true`);
+                    if (logRaw) {
+                        logRaw.split('\n').filter(Boolean).forEach(line => {
+                            const p = line.split('##');
+                            if (p.length >= 7) {
+                                changelog.push({
+                                    hash: p[0].trim(),
+                                    fullHash: p[1].trim(),
+                                    message: p[2].trim(),
+                                    author: p[3].trim(),
+                                    dateKey: p[4].trim(),
+                                    dateFormatted: p[5].trim(),
+                                    time: p[6].trim(),
+                                    relative: p[7] ? p[7].trim() : ''
+                                });
+                            }
+                        });
+                    }
+                } catch {}
+            }
 
-                // Commit anterior (HEAD~1)
-                const { stdout: prevRaw } = await runBash(`git -C "${repoPath}" log -1 --skip=1 --pretty=format:"%h##%s##%an##%ad##%ar" --date=format:"%d %b %Y, %H:%M"`);
-                let previousCommit = null;
-                if (prevRaw && prevRaw.includes('##')) {
-                    const p = prevRaw.split('##');
-                    previousCommit = { hash: p[0], message: p[1], author: p[2], date: p[3], relative: p[4] };
+            if (changelog.length === 0 && localHash) {
+                changelog.push({
+                    hash: localHash,
+                    fullHash: localFull,
+                    message: localMsg || 'Versión instalada',
+                    author: localAuthor,
+                    dateKey: '2026-10-24',
+                    dateFormatted: localDate || 'Hoy',
+                    time: '',
+                    relative: localRel || ''
+                });
+            }
+
+            // 3. Comparar local vs remoto para determinar actualizaciones pendientes
+            let hasUpdate = false;
+            let pendingCount = 0;
+
+            if (changelog.length > 0) {
+                const remoteTopSha = changelog[0].fullHash;
+                const remoteTopShort = changelog[0].hash;
+
+                if (localFull && remoteTopSha && localFull === remoteTopSha) {
+                    hasUpdate = false;
+                    pendingCount = 0;
+                } else if (localHash && remoteTopShort && localHash === remoteTopShort) {
+                    hasUpdate = false;
+                    pendingCount = 0;
+                } else {
+                    const idx = changelog.findIndex(c => (localFull && c.fullHash === localFull) || (localHash && c.hash === localHash));
+                    if (idx > 0) {
+                        hasUpdate = true;
+                        pendingCount = idx;
+                    } else if (localFull || localHash) {
+                        hasUpdate = true;
+                        if (gitExists) {
+                            const { stdout: cOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main 2>/dev/null || echo 1`);
+                            pendingCount = parseInt(cOut.trim(), 10) || 1;
+                        } else {
+                            pendingCount = 1;
+                        }
+                    }
                 }
+            }
 
-                // Check pending updates against origin/main
-                const { stdout: countOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main || echo 0`);
-                const pendingCount = parseInt(countOut.trim(), 10) || 0;
-                const hasUpdate = pendingCount > 0;
-
-                return {
-                    hasGit: true,
-                    installedPath: repoPath,
-                    repoUrl: remoteOut || defaultRepoUrl,
-                    branch: branchOut || 'main',
-                    currentCommit: {
-                        hash: localHash || (changelog[0] ? changelog[0].hash : 'HEAD'),
-                        fullHash: localFull || (changelog[0] ? changelog[0].fullHash : ''),
-                        message: localMsg || (changelog[0] ? changelog[0].message : 'Sin mensaje'),
-                        author: localAuthor || (changelog[0] ? changelog[0].author : 'Jassyel'),
-                        date: localDate || (changelog[0] ? changelog[0].dateFormatted + ', ' + changelog[0].time : 'Reciente'),
-                        relative: localRel || (changelog[0] ? changelog[0].relative : '')
-                    },
-                    previousCommit,
-                    changelog,
-                    pendingCount,
-                    hasUpdate,
-                    statusText: hasUpdate ? `¡${pendingCount} commit(s) pendientes de aplicar!` : 'Al día (Última versión instalada)'
-                };
-            } catch (err) {
-                return {
-                    hasGit: true,
-                    installedPath: repoPath,
-                    repoUrl: defaultRepoUrl,
-                    branch: 'main',
-                    currentCommit: { hash: 'Local', fullHash: '', message: 'Error consultando git', author: 'Jassyel', date: '', relative: '' },
-                    previousCommit: null,
-                    changelog: [],
-                    pendingCount: 0,
-                    hasUpdate: false,
-                    statusText: 'Al día'
+            if (!previousCommit && changelog.length >= 2) {
+                previousCommit = {
+                    hash: changelog[1].hash,
+                    fullHash: changelog[1].fullHash,
+                    message: changelog[1].message,
+                    author: changelog[1].author,
+                    date: `${changelog[1].dateFormatted}, ${changelog[1].time}`,
+                    relative: changelog[1].relative
                 };
             }
+
+            return {
+                hasGit: gitExists,
+                tokenConfigured: Boolean(token),
+                installedPath: repoPath,
+                repoUrl: defaultRepoUrl,
+                branch: 'main',
+                currentCommit: {
+                    hash: localHash || (changelog[0] ? changelog[0].hash : 'HEAD'),
+                    fullHash: localFull || (changelog[0] ? changelog[0].fullHash : ''),
+                    message: localMsg || (changelog[0] ? changelog[0].message : 'Sin mensaje'),
+                    author: localAuthor || (changelog[0] ? changelog[0].author : 'Jassyel'),
+                    date: localDate || (changelog[0] ? `${changelog[0].dateFormatted}, ${changelog[0].time}` : 'Reciente'),
+                    relative: localRel || (changelog[0] ? changelog[0].relative : '')
+                },
+                previousCommit,
+                changelog,
+                pendingCount: hasUpdate ? pendingCount : 0,
+                hasUpdate,
+                statusText: hasUpdate ? `¡${pendingCount} commit(s) pendientes de aplicar!` : 'Al día (Última versión instalada)'
+            };
         };
 
-        // Encontrar ruta de ExoLive V2 (soporta contenedor HeavyNode y pruebas locales)
         let exolivePath = '/home/container/exolive-v2';
         if (!fs.existsSync(exolivePath)) {
             const localCandidates = [
@@ -1387,10 +1496,11 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
     }
 });
 
-// 2. Aplicar cambios desde GitHub (git pull, build automático y reinicio seguro)
+// 2. Aplicar cambios desde GitHub (git fetch, reset a última compilación, build automático y reinicio)
 app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
     try {
         const { target, force } = req.body; // 'exolive' o 'portfolio'
+        const token = getGitHubToken();
 
         if (target === 'exolive') {
             let repoPath = '/home/container/exolive-v2';
@@ -1404,44 +1514,27 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
                 }
             }
 
+            const authedUrl = token 
+                ? `https://${token}@github.com/jassyel/exolive.git` 
+                : 'https://github.com/jassyel/exolive.git';
+
             if (!fs.existsSync(path.join(repoPath, '.git'))) {
-                // Auto-inicializar si aún no está configurado
-                await runBash(`cd "${repoPath}" && git init && git remote add origin https://github.com/jassyel/exolive.git && git fetch origin main && git reset --hard origin/main`);
+                await runBash(`cd "${repoPath}" && git init && git remote add origin "${authedUrl}" && git fetch origin main && git reset --hard origin/main`);
             } else {
-                await runBash(`cd "${repoPath}" && git remote set-url origin https://github.com/jassyel/exolive.git 2>/dev/null || true`);
-                // Comprobar si ya está al día
-                if (!force) {
-                    const { stdout: countOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main || echo 0`);
-                    const pending = parseInt(countOut.trim(), 10) || 0;
-                    if (pending === 0) {
-                        return res.json({
-                            success: true,
-                            alreadyUpToDate: true,
-                            message: 'ExoLive V2 ya tiene la última compilación instalada. No hay cambios pendientes en GitHub.'
-                        });
-                    }
-                }
-                await runBash(`cd "${repoPath}" && git pull origin main 2>&1`);
+                await runBash(`cd "${repoPath}" && git remote set-url origin "${authedUrl}" 2>/dev/null || true`);
+                await runBash(`cd "${repoPath}" && git fetch origin main 2>&1`);
+                await runBash(`cd "${repoPath}" && git reset --hard origin/main 2>&1`);
             }
 
-            // Compilar
-            let buildOutput = '';
-            try {
-                const nodeBin = '/home/container/node/node-v20.11.1-linux-x64/bin/node';
-                const nodeDir = fs.existsSync(nodeBin) ? path.dirname(nodeBin) : '';
-                const pathPrefix = nodeDir ? `PATH="${nodeDir}:$PATH"` : '';
-                const { stdout: bOut } = await runBash(`cd "${repoPath}" && ${pathPrefix} npm run build 2>&1 || true`);
-                buildOutput = bOut;
-            } catch {}
-
-            // Reiniciar ExoLive V2 limpiamente
+            // Reiniciar ExoLive V2 limpiamente (start-v2.sh compilará y ejecutará el servidor con el nuevo código)
             await doRestartService('exolive');
 
+            const { stdout: curSha } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%h - %s" 2>/dev/null || true`);
             return res.json({ 
                 success: true, 
                 alreadyUpToDate: false,
-                message: 'ExoLive V2 actualizado desde GitHub y reiniciado con éxito.', 
-                build: buildOutput 
+                message: `ExoLive V2 actualizado con éxito [${curSha || 'HEAD'}] y reiniciado en vivo.`, 
+                commit: curSha 
             });
         }
 
@@ -1451,27 +1544,26 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
                 repoPath = __dirname;
             }
 
+            const authedUrl = token 
+                ? `https://${token}@github.com/jassyel/TheJazZDM.git` 
+                : 'https://github.com/jassyel/TheJazZDM.git';
+
             if (!fs.existsSync(path.join(repoPath, '.git'))) {
-                // Auto-inicializar y enlazar con https://github.com/jassyel/TheJazZDM.git
-                await runBash(`cd "${repoPath}" && git init && git remote add origin https://github.com/jassyel/TheJazZDM.git && git fetch origin main && git reset --hard origin/main`);
+                await runBash(`cd "${repoPath}" && git init && git remote add origin "${authedUrl}" && git fetch origin main && git reset --hard origin/main`);
             } else {
-                await runBash(`cd "${repoPath}" && git remote set-url origin https://github.com/jassyel/TheJazZDM.git 2>/dev/null || true`);
-                if (!force) {
-                    const { stdout: countOut } = await runBash(`git -C "${repoPath}" rev-list --count HEAD..origin/main || echo 0`);
-                    const pending = parseInt(countOut.trim(), 10) || 0;
-                    if (pending === 0) {
-                        return res.json({
-                            success: true,
-                            alreadyUpToDate: true,
-                            message: 'El Portafolio ya tiene la última compilación instalada. No hay cambios pendientes en GitHub.'
-                        });
-                    }
-                }
-                await runBash(`cd "${repoPath}" && git pull origin main 2>&1`);
+                await runBash(`cd "${repoPath}" && git remote set-url origin "${authedUrl}" 2>/dev/null || true`);
+                await runBash(`cd "${repoPath}" && git fetch origin main 2>&1`);
+                await runBash(`cd "${repoPath}" && git reset --hard origin/main 2>&1`);
             }
 
             setTimeout(() => { doRestartService('portfolio'); }, 1000);
-            return res.json({ success: true, alreadyUpToDate: false, message: 'Portafolio actualizado desde GitHub (jassyel/TheJazZDM) y reiniciándose.', details: 'Git pull completado' });
+            const { stdout: curSha } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%h - %s" 2>/dev/null || true`);
+            return res.json({ 
+                success: true, 
+                alreadyUpToDate: false, 
+                message: `Portafolio Web actualizado con éxito [${curSha || 'HEAD'}] y reiniciándose.`, 
+                commit: curSha 
+            });
         }
 
         res.status(400).json({ success: false, message: 'Objetivo de actualización no reconocido.' });
@@ -1480,7 +1572,39 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
     }
 });
 
+// 3. Guardar y verificar Token de Acceso Personal (PAT) de GitHub
+app.post('/api/updates/token', requireAdminAuth, async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token || !token.trim()) {
+            return res.status(400).json({ success: false, message: 'El token no puede estar vacío.' });
+        }
+        const cleanToken = token.trim();
+        const testRes = await fetchGitHubCommitsAPI('jassyel', 'exolive', cleanToken, 1);
+        if (!testRes.success && testRes.statusCode === 401) {
+            return res.status(401).json({ success: false, message: 'Token rechazado por GitHub. Acceso no autorizado o token expirado.' });
+        }
+
+        const localTokenFile = path.join(__dirname, '.github_token');
+        fs.writeFileSync(localTokenFile, cleanToken, 'utf8');
+
+        if (fs.existsSync('/home/container')) {
+            try { fs.writeFileSync('/home/container/.github_token', cleanToken, 'utf8'); } catch {}
+        }
+
+        let exolivePath = '/home/container/exolive-v2';
+        if (fs.existsSync(exolivePath)) {
+            await runBash(`git -C "${exolivePath}" remote set-url origin "https://${cleanToken}@github.com/jassyel/exolive.git" 2>/dev/null || true`);
+        }
+
+        res.json({ success: true, message: 'GitHub Token verificado y guardado correctamente.' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // ══════════════════════════════════════════════════════
+
 
 function querySplitServer(endpoint, payload = null, timeoutMs = 4000) {
     return new Promise((resolve) => {

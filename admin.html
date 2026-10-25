@@ -1036,6 +1036,85 @@
                     </div>
                 </div>
 
+                <!-- SECCIÓN 3: ECLIPSEMC WEB -->
+                <div class="glass-panel p-4 sm:p-5 border border-amber-500/30 bg-gradient-to-br from-[#1c1206] via-[#140c04] to-[#090602] flex flex-col gap-4">
+                    <!-- Encabezado de la tarjeta EclipseMC -->
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center text-lg shadow-[0_0_15px_rgba(245,158,11,0.25)] shrink-0">
+                                <i class="fa-solid fa-store"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-sm font-black text-white">EclipseMC Web</h3>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300 border border-amber-700/50">
+                                        <i class="fa-solid fa-code-branch text-[9px]"></i> <span id="drawer-eclipsemc-branch">main</span>
+                                    </span>
+                                </div>
+                                <a id="drawer-eclipsemc-repo-link" href="https://github.com/jassyel/eclipsemc-web" target="_blank" class="text-[11px] text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1 mt-0.5 underline-offset-2 hover:underline">
+                                    <span>github.com/jassyel/eclipsemc-web</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <span id="drawer-eclipsemc-status-pill" class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-gray-700 text-gray-400 bg-gray-800/40 shrink-0">
+                            Comprobando...
+                        </span>
+                    </div>
+
+                    <!-- Commit Actual Instalado -->
+                    <div class="bg-black/40 rounded-xl p-3 border border-white/5 space-y-1.5">
+                        <div class="flex items-center justify-between text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+                            <span class="flex items-center gap-1.5 text-amber-300 font-bold">
+                                <i class="fa-solid fa-circle-dot text-[8px] text-emerald-400"></i> Commit Instalado
+                            </span>
+                            <span id="drawer-eclipsemc-current-time" class="text-gray-400">--</span>
+                        </div>
+                        <div class="flex items-start gap-2 pt-1">
+                            <span id="drawer-eclipsemc-current-hash" class="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">#--</span>
+                            <p id="drawer-eclipsemc-current-msg" class="text-xs text-gray-200 font-sans leading-tight">Cargando información del repositorio...</p>
+                        </div>
+                        <div class="text-[10px] text-gray-400 font-mono pt-1 border-t border-white/5 flex items-center justify-between">
+                            <span>Autor: <strong id="drawer-eclipsemc-current-author" class="text-amber-300">--</strong></span>
+                            <span id="drawer-eclipsemc-status-subtext" class="text-gray-400">Tienda y Portal PHP</span>
+                        </div>
+                    </div>
+
+                    <!-- Commit Anterior -->
+                    <div class="bg-black/30 rounded-xl p-3 border border-white/5">
+                        <span class="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                            Commit Anterior
+                        </span>
+                        <div id="drawer-eclipsemc-prev-commit" class="text-[11px] text-gray-400 font-mono truncate">
+                            --
+                        </div>
+                    </div>
+
+                    <!-- Historial de Cambios Recientes (Changelog) -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-gray-400 uppercase tracking-wider font-bold">
+                                <i class="fa-solid fa-timeline text-amber-400 mr-1"></i> Historial Remoto
+                            </span>
+                            <span class="text-[10px] text-gray-400 font-mono">Últimos commits</span>
+                        </div>
+                        <div id="drawer-eclipsemc-changelog" class="space-y-2 max-h-72 overflow-y-auto drawer-scroll pr-1">
+                            <div class="text-xs text-gray-400 p-2 text-center">Cargando historial de git...</div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Aplicar Cambios (Se atenúa si ya está al día) -->
+                    <div class="pt-2 border-t border-white/5">
+                        <button onclick="applyServiceUpdate('eclipsemc', 'EclipseMC Web')" id="drawer-btn-apply-eclipsemc" disabled class="w-full py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all opacity-40 cursor-not-allowed bg-white/[0.03] text-gray-400 border border-white/10 shadow-none">
+                            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                            <span>Al día (Última versión)</span>
+                        </button>
+                        <p class="text-[10px] text-gray-400 text-center mt-1.5">
+                            Al aplicar cambios, se ejecuta git pull y sincronización de tienda y pasarela.
+                        </p>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Pie del Drawer -->

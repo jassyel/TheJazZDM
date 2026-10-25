@@ -1693,39 +1693,6 @@ function closeGitDrawer() {
     }, 320);
 }
 
-function toggleTokenConfigModal() {
-    const modal = document.getElementById('drawer-token-modal');
-    if (modal) modal.classList.toggle('hidden');
-}
-
-async function saveGitHubToken() {
-    if (!currentPass) return;
-    const input = document.getElementById('drawer-token-input');
-    if (!input || !input.value.trim()) {
-        showToast('Token Requerido', 'Introduce un Personal Access Token vÃ¡lido de GitHub.', 'warning');
-        return;
-    }
-    showToast('Verificando Token', 'Comprobando acceso con GitHub...', 'info');
-    try {
-        const res = await fetch('/api/updates/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: currentPass, token: input.value.trim() })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast('Token Guardado', data.message, 'success');
-            input.value = '';
-            toggleTokenConfigModal();
-            checkGitHubUpdates(true);
-        } else {
-            showToast('Error de Token', data.message || 'No se pudo verificar el token.', 'error');
-        }
-    } catch (e) {
-        showToast('Error', 'Fallo al comunicarse con el servidor.', 'error');
-    }
-}
-
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const drawer = document.getElementById('git-drawer');
@@ -1752,7 +1719,7 @@ async function checkGitHubUpdates(manual = false) {
         if (data.success && data.updates) {
             renderGitHubUpdates(data.updates);
             if (manual) {
-                const anyPending = data.updates.exolive?.hasUpdate || data.updates.portfolio?.hasUpdate;
+                const anyPending = data.updates.exolive?.hasUpdate || data.updates.portfolio?.hasUpdate || data.updates.eclipsemc?.hasUpdate;
                 if (anyPending) {
                     showToast('Â¡Actualizaciones Detectadas!', 'Hay nuevos commits en GitHub listos para aplicar.', 'info');
                 } else {
@@ -1771,18 +1738,7 @@ async function checkGitHubUpdates(manual = false) {
 }
 
 function renderGitHubUpdates(u) {
-    const hasAnyUpdate = Boolean((u.exolive && u.exolive.hasUpdate) || (u.portfolio && u.portfolio.hasUpdate));
-
-    // Estado del Token de GitHub PAT
-    const tokenStatus = document.getElementById('drawer-token-status');
-    if (tokenStatus) {
-        const isConnected = u.exolive?.tokenConfigured || u.portfolio?.tokenConfigured;
-        if (isConnected) {
-            tokenStatus.innerHTML = 'GitHub PAT: <strong class="text-emerald-400">Conectado (Acceso Privado Activo)</strong>';
-        } else {
-            tokenStatus.innerHTML = 'GitHub PAT: <strong class="text-amber-400">No Configurado</strong>';
-        }
-    }
+    const hasAnyUpdate = Boolean((u.exolive && u.exolive.hasUpdate) || (u.portfolio && u.portfolio.hasUpdate) || (u.eclipsemc && u.eclipsemc.hasUpdate));
 
     // Indicador en Navbar (Desktop y MÃ³vil)
     const navBadge = document.getElementById('nav-git-badge');
@@ -1970,6 +1926,112 @@ function renderGitHubUpdates(u) {
         }
     }
 }
+
+    // 3. RENDER ECLIPSEMC WEB
+    if (u.eclipsemc) {
+        const ecl = u.eclipsemc;
+        const branchEl = document.getElementById('drawer-eclipsemc-branch');
+        const repoLinkEl = document.getElementById('drawer-eclipsemc-repo-link');
+        const statusPill = document.getElementById('drawer-eclipsemc-status-pill');
+        const curHash = document.getElementById('drawer-eclipsemc-current-hash');
+        const curMsg = document.getElementById('drawer-eclipsemc-current-msg');
+        const curAuthor = document.getElementById('drawer-eclipsemc-current-author');
+        const curTime = document.getElementById('drawer-eclipsemc-current-time');
+        const prevEl = document.getElementById('drawer-eclipsemc-prev-commit');
+        const changelogEl = document.getElementById('drawer-eclipsemc-changelog');
+        const applyBtn = document.getElementById('drawer-btn-apply-eclipsemc');
+
+        if (branchEl) branchEl.innerText = ecl.branch || 'main';
+        if (repoLinkEl && ecl.repoUrl) {
+            repoLinkEl.href = ecl.repoUrl.replace(/\.git$/, '');
+            const spanText = repoLinkEl.querySelector('span');
+            if (spanText) spanText.innerText = (ecl.repoUrl.replace(/https?:\/\//, '').replace(/\.git$/, ''));
+        }
+
+        if (curHash) curHash.innerText = ecl.currentCommit?.hash ? '#' + ecl.currentCommit.hash : '#HEAD';
+        if (curMsg) curMsg.innerText = ecl.currentCommit?.message || 'Sin mensaje de commit';
+        if (curAuthor) curAuthor.innerText = ecl.currentCommit?.author || 'Jassyel';
+        if (curTime) curTime.innerText = ecl.currentCommit?.date ? `${ecl.currentCommit.date} (${ecl.currentCommit.relative || ''})` : 'Reciente';
+
+        if (prevEl) {
+            if (ecl.previousCommit) {
+                prevEl.innerHTML = `<span class="text-amber-300 font-bold">#${ecl.previousCommit.hash}</span> - ${ecl.previousCommit.message} <span class="text-gray-400">(${ecl.previousCommit.date || ''} - ${ecl.previousCommit.relative || ''})</span>`;
+            } else {
+                prevEl.innerHTML = '<span class="text-gray-500">No hay commit anterior registrado</span>';
+            }
+        }
+
+        if (changelogEl) {
+            if (ecl.changelog && ecl.changelog.length > 0) {
+                const groups = {};
+                ecl.changelog.forEach(c => {
+                    const dateLabel = c.dateFormatted || c.dateKey || 'Recientes';
+                    if (!groups[dateLabel]) groups[dateLabel] = [];
+                    groups[dateLabel].push(c);
+                });
+
+                let html = '';
+                for (const [dateLabel, items] of Object.entries(groups)) {
+                    html += `
+                        <div class="pt-3 pb-1 flex items-center gap-2">
+                            <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1.5">
+                                <i class="fa-regular fa-calendar text-[9px]"></i> Commits del ${dateLabel}
+                            </span>
+                            <div class="h-[1px] flex-1 bg-white/10"></div>
+                        </div>
+                    `;
+                    items.forEach(c => {
+                        const commitUrl = `https://github.com/jassyel/eclipsemc-web/commit/${c.fullHash || c.hash}`;
+                        html += `
+                            <div class="group flex items-start justify-between gap-3 p-2.5 rounded-xl bg-black/40 border border-white/5 hover:border-amber-500/40 hover:bg-amber-950/20 transition-all text-xs">
+                                <div class="flex-1 min-w-0">
+                                    <a href="${commitUrl}" target="_blank" class="text-gray-200 font-semibold text-xs leading-snug hover:text-amber-300 transition-colors block" title="${c.message}">
+                                        ${c.message}
+                                    </a>
+                                    <div class="text-[10px] text-gray-400 flex items-center gap-2 mt-1 font-mono flex-wrap">
+                                        <span class="text-amber-300 font-bold">${c.author}</span>
+                                        <span class="text-gray-600">&bull;</span>
+                                        <span>${c.time || ''}</span>
+                                        <span class="text-gray-600">&bull;</span>
+                                        <span class="text-gray-400">${c.relative || ''}</span>
+                                    </div>
+                                </div>
+                                <a href="${commitUrl}" target="_blank" class="font-mono text-[11px] font-bold px-2 py-1 rounded bg-[#150d03] border border-amber-500/30 text-amber-300 group-hover:border-amber-400 group-hover:text-white transition-all flex items-center gap-1 shrink-0" title="Ver commit en GitHub">
+                                    <span>#${c.hash}</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px] text-amber-400"></i>
+                                </a>
+                            </div>
+                        `;
+                    });
+                }
+                changelogEl.innerHTML = html;
+            } else {
+                changelogEl.innerHTML = '<div class="text-xs text-gray-400 p-3 text-center bg-black/20 rounded-xl border border-white/5">No hay historial disponible</div>';
+            }
+        }
+
+        if (statusPill) {
+            if (ecl.hasUpdate) {
+                statusPill.className = 'text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-emerald-500/50 text-emerald-400 bg-emerald-500/20 animate-pulse shrink-0';
+                statusPill.innerText = `¡${ecl.pendingCount} pendiente(s)!`;
+            } else {
+                statusPill.className = 'text-[10px] font-bold px-2.5 py-1 rounded-full border border-gray-700 text-gray-400 bg-gray-800/40 shrink-0';
+                statusPill.innerText = 'Al día';
+            }
+        }
+
+        if (applyBtn) {
+            if (ecl.hasUpdate) {
+                applyBtn.disabled = false;
+                applyBtn.className = 'w-full py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 text-white border border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:brightness-110 cursor-pointer animate-pulse';
+                applyBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span>¡Aplicar ${ecl.pendingCount} cambio(s) pendientes!</span>`;
+            } else {
+                applyBtn.disabled = true;
+                applyBtn.className = 'w-full py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all opacity-40 cursor-not-allowed bg-white/[0.03] text-gray-400 border border-white/10 shadow-none';
+                applyBtn.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Al día (Última versión)</span>';
+            }
+        }
+    }
 
 async function applyServiceUpdate(target, serviceName, force = false) {
     if (!currentPass) return;

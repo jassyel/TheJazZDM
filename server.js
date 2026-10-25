@@ -1350,10 +1350,11 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
     try {
         const fetchGitDetails = async (repoPath, defaultName, defaultRepoUrl) => {
             const isExoLive = defaultName === 'ExoLive V2' || repoPath.includes('exolive');
+            const isEclipse = defaultName === 'EclipseMC Web' || repoPath.includes('EclipseMC') || repoPath.includes('eclipsemc');
             const repoOwner = 'jassyel';
-            const repoName = isExoLive ? 'exolive' : 'TheJazZDM';
+            const repoName = isExoLive ? 'exolive' : (isEclipse ? 'eclipsemc-web' : 'TheJazZDM');
             const token = getGitHubToken();
-            const authedUrl = (isExoLive && token) 
+            const authedUrl = token 
                 ? `https://${token}@github.com/${repoOwner}/${repoName}.git` 
                 : defaultRepoUrl;
 
@@ -1532,14 +1533,28 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
             portfolioPath = __dirname;
         }
 
+        let eclipsePath = '/home/container/public_html';
+        if (!fs.existsSync(eclipsePath)) {
+            const localCandidates = [
+                path.resolve(__dirname, '../eclipsemc-web'),
+                path.resolve(__dirname, '../EclipseMC - Web'),
+                'C:\\Users\\JASSYEL\\Downloads\\archive-2026-10-22T220518-0500\\EclipseMC - Web'
+            ];
+            for (const c of localCandidates) {
+                if (fs.existsSync(c)) { eclipsePath = c; break; }
+            }
+        }
+
         const exoliveData = await fetchGitDetails(exolivePath, 'ExoLive V2', 'https://github.com/jassyel/exolive.git');
         const portfolioData = await fetchGitDetails(portfolioPath, 'Portafolio Web', 'https://github.com/jassyel/TheJazZDM.git');
+        const eclipseData = await fetchGitDetails(eclipsePath, 'EclipseMC Web', 'https://github.com/jassyel/eclipsemc-web.git');
 
         res.json({
             success: true,
             updates: {
                 exolive: exoliveData,
-                portfolio: portfolioData
+                portfolio: portfolioData,
+                eclipsemc: eclipseData
             }
         });
     } catch (e) {
@@ -1550,7 +1565,7 @@ app.post('/api/updates/check', requireAdminAuth, async (req, res) => {
 // 2. Aplicar cambios desde GitHub (git fetch, reset a última compilación, build automático y reinicio)
 app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
     try {
-        const { target, force } = req.body; // 'exolive' o 'portfolio'
+        const { target, force } = req.body; // 'exolive', 'portfolio' o 'eclipsemc'
         const token = getGitHubToken();
 
         if (target === 'exolive') {
@@ -1585,6 +1600,40 @@ app.post('/api/updates/apply', requireAdminAuth, async (req, res) => {
                 success: true, 
                 alreadyUpToDate: false,
                 message: `ExoLive V2 actualizado con éxito [${curSha || 'HEAD'}] y reiniciado en vivo.`, 
+                commit: curSha 
+            });
+        }
+
+        if (target === 'eclipsemc' || target === 'eclipsemc-web') {
+            let repoPath = '/home/container/public_html';
+            if (!fs.existsSync(repoPath)) {
+                const localCandidates = [
+                    path.resolve(__dirname, '../eclipsemc-web'),
+                    path.resolve(__dirname, '../EclipseMC - Web'),
+                    'C:\\Users\\JASSYEL\\Downloads\\archive-2026-10-22T220518-0500\\EclipseMC - Web'
+                ];
+                for (const c of localCandidates) {
+                    if (fs.existsSync(c)) { repoPath = c; break; }
+                }
+            }
+
+            const authedUrl = token 
+                ? `https://${token}@github.com/jassyel/eclipsemc-web.git` 
+                : 'https://github.com/jassyel/eclipsemc-web.git';
+
+            if (!fs.existsSync(path.join(repoPath, '.git'))) {
+                await runBash(`cd "${repoPath}" && git init && git remote add origin "${authedUrl}" && git fetch origin main && git reset --hard origin/main`);
+            } else {
+                await runBash(`cd "${repoPath}" && git remote set-url origin "${authedUrl}" 2>/dev/null || true`);
+                await runBash(`cd "${repoPath}" && git fetch origin main 2>&1`);
+                await runBash(`cd "${repoPath}" && git reset --hard origin/main 2>&1`);
+            }
+
+            const { stdout: curSha } = await runBash(`git -C "${repoPath}" log -1 --pretty=format:"%h - %s" 2>/dev/null || true`);
+            return res.json({ 
+                success: true, 
+                alreadyUpToDate: false, 
+                message: `EclipseMC Web actualizado con éxito [${curSha || 'HEAD'}].`, 
                 commit: curSha 
             });
         }

@@ -152,11 +152,11 @@
         },
         "velocity": {
             "enabled": true,
-            "time": "02:00"
+            "time": "04:00"
         },
         "exolive": {
             "enabled": true,
-            "time": "02:00"
+            "time": "05:00"
         },
         "portfolio": {
             "enabled": false,

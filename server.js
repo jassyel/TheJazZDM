@@ -457,7 +457,7 @@ const SERVICES = {
         grep: 'apps/api/dist/server\\.js|start-v2\\.sh|exolive',
         pidFile: '/home/container/.exolive.pid',
         stopCmd: 'touch /home/container/.exolive_manual_stop && ([ -f /home/container/.exolive.pid ] && kill -TERM $(cat /home/container/.exolive.pid 2>/dev/null) 2>/dev/null || pkill -TERM -f "apps/api/dist/server\\.js" || pkill -TERM -f "start-v2\\.sh" || pkill -TERM -f "exolive" || true); rm -f /home/container/.exolive.pid',
-        startCmd: 'rm -f /home/container/.exolive_manual_stop && cd /home/container/exolive-v2 && bash deploy/heavynode/start-v2.sh >> /home/container/exolive-v2.log 2>&1 & echo $! > /home/container/.exolive.pid',
+        startCmd: 'rm -f /home/container/.exolive_manual_stop && cd /home/container/exolive-v2 && nohup bash deploy/heavynode/start-v2.sh </dev/null >> /home/container/exolive-v2.log 2>&1 & disown',
         restartCmd: 'custom_exolive_restart'
     },
     velocity: {
@@ -468,8 +468,8 @@ const SERVICES = {
         logFile: '/home/container/proxy.log',
         grep: '(velocity|VeloFlame|veloflame).*\\.jar',
         pidFile: '/home/container/.velocity.pid',
-        stopCmd: '([ -f /home/container/.velocity.pid ] && kill -TERM $(cat /home/container/.velocity.pid 2>/dev/null) 2>/dev/null || true); pkill -TERM -f "(velocity|VeloFlame|veloflame).*\\.jar" || true; rm -f /home/container/.velocity.pid',
-        startCmd: 'cd /home/container/proxy && (sed -i \'/server-aliases/d\' velocity.toml 2>/dev/null || true) && (java -Xms128M -Xmx512M -jar VeloFlame-Lite.jar || java -Xms128M -Xmx512M -jar $(ls -1 velocity*.jar 2>/dev/null | head -n1)) >> /home/container/proxy.log 2>&1 & echo $! > /home/container/.velocity.pid',
+        stopCmd: 'touch /home/container/.velocity_manual_stop; ([ -f /home/container/.velocity.pid ] && kill -TERM $(cat /home/container/.velocity.pid 2>/dev/null) 2>/dev/null || true); pkill -TERM -f "(velocity|VeloFlame|veloflame).*\\.jar" || true; rm -f /home/container/.velocity.pid',
+        startCmd: 'rm -f /home/container/.velocity_manual_stop; sleep 1; if ! pgrep -f "(velocity|VeloFlame|veloflame).*\\.jar" >/dev/null 2>&1; then cd /home/container/proxy && (sed -i \'/server-aliases/d\' velocity.toml 2>/dev/null || true) && nohup java -Xms128M -Xmx512M -jar $([ -f VeloFlame-Lite.jar ] && echo VeloFlame-Lite.jar || ls -1 velocity*.jar 2>/dev/null | head -n1) </dev/null >> /home/container/proxy.log 2>&1 & disown; fi',
         restartCmd: 'custom_velocity_restart'
     },
     portfolio: {
@@ -507,20 +507,27 @@ async function doRestartService(serviceKey) {
     }
 
     if (serviceKey === 'velocity') {
-        // 1. Apagar proceso previo de Velocity / VeloFlame
+        // 1. Quitar bandera de detención manual para que el supervisor actúe
+        await runBash('rm -f /home/container/.velocity_manual_stop');
+        // 2. Apagar proceso previo de Velocity / VeloFlame limpiamente
         await runBash('([ -f /home/container/.velocity.pid ] && kill -TERM $(cat /home/container/.velocity.pid 2>/dev/null) 2>/dev/null || true); pkill -TERM -f "(velocity|VeloFlame|veloflame).*\\.jar" || true; rm -f /home/container/.velocity.pid');
-        // 2. Esperar activamente a que el proceso anterior libere los puertos
-        for (let i = 0; i < 10; i++) {
-            await new Promise(r => setTimeout(r, 700));
+        // 3. Esperar activamente a que el proceso anterior libere los puertos
+        for (let i = 0; i < 8; i++) {
+            await new Promise(r => setTimeout(r, 600));
             const { stdout } = await runBash('pgrep -f "(velocity|VeloFlame|veloflame).*\\.jar" || true');
             if (!stdout.trim()) break;
-            if (i === 7) await runBash('pkill -9 -f "(velocity|VeloFlame|veloflame).*\\.jar" || true');
+            if (i === 6) await runBash('pkill -9 -f "(velocity|VeloFlame|veloflame).*\\.jar" || true');
         }
-        await new Promise(r => setTimeout(r, 1000));
-        // 3. Sanear velocity.toml (remover server-aliases inválido) e iniciar Velocity/VeloFlame
+        await new Promise(r => setTimeout(r, 1500));
+        // 4. Sanear velocity.toml
         await runBash('sed -i \'/server-aliases/d\' /home/container/proxy/velocity.toml 2>/dev/null || true');
-        const { stdout, stderr } = await runBash('cd /home/container/proxy && (java -Xms128M -Xmx512M -jar VeloFlame-Lite.jar || java -Xms128M -Xmx512M -jar $(ls -1 velocity*.jar 2>/dev/null | head -n1)) >> /home/container/proxy.log 2>&1 & echo $! > /home/container/.velocity.pid');
-        return { success: true, message: 'Velocity Proxy reiniciado correctamente y con puertos liberados.', output: stdout || stderr };
+        // 5. Si el supervisor está activo en start_neoforge_flags.sh, él mismo lo levantará.
+        // Si tras 2 segundos no está corriendo, se lanza en segundo plano 100% desacoplado con nohup y </dev/null
+        const { stdout: checkRunning } = await runBash('pgrep -f "(velocity|VeloFlame|veloflame).*\\.jar" || true');
+        if (!checkRunning.trim()) {
+            await runBash('cd /home/container/proxy && nohup java -Xms128M -Xmx512M -jar $([ -f VeloFlame-Lite.jar ] && echo VeloFlame-Lite.jar || ls -1 velocity*.jar 2>/dev/null | head -n1) </dev/null >> /home/container/proxy.log 2>&1 & disown');
+        }
+        return { success: true, message: 'Velocity Proxy reiniciado correctamente y con puertos liberados.' };
     }
 
     if (serviceKey === 'exolive') {
@@ -533,7 +540,7 @@ async function doRestartService(serviceKey) {
         }
         await new Promise(r => setTimeout(r, 800));
         await runBash('rm -f /home/container/.exolive_manual_stop');
-        await runBash('cd /home/container/exolive-v2 && (bash deploy/heavynode/start-v2.sh >> /home/container/exolive-v2.log 2>&1 & echo $! > /home/container/.exolive.pid)');
+        await runBash('cd /home/container/exolive-v2 && nohup bash deploy/heavynode/start-v2.sh </dev/null >> /home/container/exolive-v2.log 2>&1 & disown');
         return { success: true, message: 'ExoLive V2 reiniciado correctamente.' };
     }
 

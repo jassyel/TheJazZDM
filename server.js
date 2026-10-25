@@ -9,9 +9,21 @@ const crypto = require('crypto');
 const { exec, execSync } = require('child_process');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORTFOLIO_PORT || 26293;
 const DB_PATH = path.join(__dirname, 'data', 'config.json');
 const visitedIps = new Set();
+
+function getClientIp(req) {
+    if (req.ip) return req.ip;
+    const xff = req.headers['x-forwarded-for'];
+    if (xff && typeof xff === 'string') {
+        const parts = xff.split(',');
+        const first = parts[0].trim();
+        if (first) return first;
+    }
+    return req.socket?.remoteAddress || '127.0.0.1';
+}
 
 // ══════════════════════════════════════════════════════
 // CABECERAS DE SEGURIDAD HTTP Y PROTECCIÓN CONTRA ATAQUES
@@ -77,7 +89,7 @@ function safeComparePassword(input, stored) {
 
 // Middleware de autenticación centralizado
 function requireAdminAuth(req, res, next) {
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+    const clientIp = getClientIp(req);
     const rateLimit = checkRateLimit(clientIp);
     if (!rateLimit.allowed) {
         return res.status(429).json({
@@ -635,14 +647,19 @@ app.get('/api/data', (req, res) => {
             modified = true;
         }
 
-        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+        const clientIp = getClientIp(req);
         if (!visitedIps.has(clientIp)) {
             visitedIps.add(clientIp); data.visitas++; modified = true;
         }
 
         if (modified) fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 4));
-        // IMPORTANTE: Nunca exponer la contraseña en la API pública
+        // IMPORTANTE: Nunca exponer contraseñas, tokens ni datos sensibles en la API pública
         delete data.admin_password;
+        delete data.github_token;
+        if (data.split_server) {
+            delete data.split_server.token;
+        }
+        delete data._lastRestartDates;
         res.json(data);
     } catch (e) { res.status(500).json({ error: "Error leyendo base de datos" }); }
 });
@@ -745,6 +762,16 @@ app.post('/api/save', requireAdminAuth, (req, res) => {
 
 // Subida de archivos segura (Protegido por requireAdminAuth)
 app.post('/api/upload', (req, res) => {
+    const clientIp = getClientIp(req);
+    const rateLimit = checkRateLimit(clientIp);
+    if (!rateLimit.allowed) {
+        return res.status(429).json({
+            success: false,
+            rateLimited: true,
+            message: `Demasiados intentos fallidos. Acceso bloqueado temporalmente por ${rateLimit.remainingMins} minuto(s).`
+        });
+    }
+
     upload.single('file')(req, res, (err) => {
         if (err) {
             return res.status(400).json({ success: false, message: err.message || 'Error validando el archivo.' });
@@ -758,13 +785,13 @@ app.post('/api/upload', (req, res) => {
             return res.status(500).json({ success: false, message: 'Error en base de datos.' });
         }
 
-        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
         if (!req.body.password || !safeComparePassword(req.body.password, currentDb.admin_password)) {
             if (req.file) fs.unlinkSync(req.file.path);
             recordFailedAttempt(clientIp);
             return res.status(401).json({ success: false, unauthorized: true, message: 'Autenticación denegada.' });
         }
 
+        resetFailedAttempts(clientIp);
         res.json({ success: true, filename: req.file.filename });
     });
 });
@@ -796,12 +823,21 @@ setInterval(() => {
 
 // Subida por fragmentos (Chunks) - Elude límites 413 de reverse proxies (1MB)
 app.post('/api/upload-chunk', (req, res) => {
+    const clientIp = getClientIp(req);
+    const rateLimit = checkRateLimit(clientIp);
+    if (!rateLimit.allowed) {
+        return res.status(429).json({
+            success: false,
+            rateLimited: true,
+            message: `Demasiados intentos fallidos. Acceso bloqueado temporalmente por ${rateLimit.remainingMins} minuto(s).`
+        });
+    }
+
     uploadChunk.single('chunk')(req, res, (err) => {
         if (err) {
             return res.status(400).json({ success: false, message: err.message || 'Error en bloque de subida.' });
         }
 
-        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
         let currentDb;
         try {
             currentDb = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
@@ -815,6 +851,8 @@ app.post('/api/upload-chunk', (req, res) => {
             recordFailedAttempt(clientIp);
             return res.status(401).json({ success: false, unauthorized: true, message: 'Autenticación denegada.' });
         }
+
+        resetFailedAttempts(clientIp);
 
         if (!uploadId || !fileName || chunkIndex === undefined || totalChunks === undefined || !req.file) {
             return res.status(400).json({ success: false, message: 'Parámetros de fragmentación incompletos.' });

@@ -1925,7 +1925,6 @@ function renderGitHubUpdates(u) {
             }
         }
     }
-}
 
     // 3. RENDER ECLIPSEMC WEB
     if (u.eclipsemc) {
@@ -2013,10 +2012,10 @@ function renderGitHubUpdates(u) {
         if (statusPill) {
             if (ecl.hasUpdate) {
                 statusPill.className = 'text-[10px] font-extrabold px-2.5 py-1 rounded-full border border-emerald-500/50 text-emerald-400 bg-emerald-500/20 animate-pulse shrink-0';
-                statusPill.innerText = `¡${ecl.pendingCount} pendiente(s)!`;
+                statusPill.innerText = `ï¿½${ecl.pendingCount} pendiente(s)!`;
             } else {
                 statusPill.className = 'text-[10px] font-bold px-2.5 py-1 rounded-full border border-gray-700 text-gray-400 bg-gray-800/40 shrink-0';
-                statusPill.innerText = 'Al día';
+                statusPill.innerText = 'Al dï¿½a';
             }
         }
 
@@ -2024,22 +2023,23 @@ function renderGitHubUpdates(u) {
             if (ecl.hasUpdate) {
                 applyBtn.disabled = false;
                 applyBtn.className = 'w-full py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 text-white border border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:brightness-110 cursor-pointer animate-pulse';
-                applyBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span>¡Aplicar ${ecl.pendingCount} cambio(s) pendientes!</span>`;
+                applyBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> <span>ï¿½Aplicar ${ecl.pendingCount} cambio(s) pendientes!</span>`;
             } else {
                 applyBtn.disabled = true;
                 applyBtn.className = 'w-full py-2.5 px-4 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all opacity-40 cursor-not-allowed bg-white/[0.03] text-gray-400 border border-white/10 shadow-none';
-                applyBtn.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Al día (Última versión)</span>';
+                applyBtn.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Al dï¿½a (ï¿½ltima versiï¿½n)</span>';
             }
         }
     }
+}
 
 async function applyServiceUpdate(target, serviceName, force = false) {
     if (!currentPass) return;
 
     if (!force) {
-        const btn = target === 'exolive' 
-            ? document.getElementById('drawer-btn-apply-exolive') 
-            : document.getElementById('drawer-btn-apply-portfolio');
+        const btn = target === 'exolive' ? document.getElementById('drawer-btn-apply-exolive') : (target === 'eclipsemc' || target === 'eclipsemc-web' ? document.getElementById('drawer-btn-apply-eclipsemc') : document.getElementById('drawer-btn-apply-portfolio'));
+
+
         if (btn && btn.disabled) {
             showToast('Al DÃ­a', `${serviceName} ya tiene la Ãºltima versiÃ³n instalada.`, 'info');
             return;
@@ -2053,9 +2053,9 @@ async function applyServiceUpdate(target, serviceName, force = false) {
 
     showToast('Actualizando ' + serviceName, 'Aplicando compilaciÃ³n y reiniciando servicio en HeavyNode...', 'info');
 
-    const btn = target === 'exolive' 
-        ? document.getElementById('drawer-btn-apply-exolive') 
-        : document.getElementById('drawer-btn-apply-portfolio');
+        const btn = target === 'exolive' ? document.getElementById('drawer-btn-apply-exolive') : (target === 'eclipsemc' || target === 'eclipsemc-web' ? document.getElementById('drawer-btn-apply-eclipsemc') : document.getElementById('drawer-btn-apply-portfolio'));
+
+
     if (btn) {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Compilando y aplicando...</span>';
         btn.disabled = true;
